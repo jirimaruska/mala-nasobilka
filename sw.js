@@ -11,6 +11,8 @@ const ASSETS = [
   'manifest.webmanifest',
   'css/app.css',
   'js/main.js',
+  'js/facts.js',
+  'js/storage.js',
   'icons/icon.svg',
   'icons/icon-180.png',
   'icons/icon-192.png',
