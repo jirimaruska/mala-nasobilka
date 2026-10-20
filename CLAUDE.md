@@ -67,6 +67,6 @@ tests/                  testy logiky (node:test)
 ```
 
 ## Příkazy
-- Testy: `node --test tests/`
+- Testy: `node --test`
 - Lokálně: `npx serve .` (nebo `python3 -m http.server`) a otevřít http://localhost:3000
 - Ikony po změně `icons/icon.svg`: `node tools/make-icons.mjs` (potřebuje Playwright)

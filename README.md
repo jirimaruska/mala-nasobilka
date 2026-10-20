@@ -27,6 +27,6 @@ V sekci Pro rodiče jde udělat zálohu do souboru a zase ji nahrát.
 Statický web bez build kroku a bez závislostí. Pravidla projektu jsou v [CLAUDE.md](CLAUDE.md).
 
 ```sh
-node --test tests/   # testy
-npx serve .          # lokální server
+node --test   # testy (najde tests/*.test.mjs)
+npx serve .   # lokální server
 ```

@@ -1,0 +1,223 @@
+/* Malá násobilka: vzhled. Barvy jsou proměnné, tmavý režim je níž. */
+
+:root {
+  color-scheme: light dark;
+  --bg: #f4f1ff;
+  --surface: #ffffff;
+  --surface-2: #ece8fb;
+  --text: #1f1d2b;
+  --muted: #625f78;
+  --border: #dcd6f3;
+  --accent: #6d4aff;
+  --accent-2: #5536e0;
+  --on-accent: #ffffff;
+  --ok: #15803d;
+  --ok-bg: #dcfce7;
+  --bad: #c2410c;
+  --bad-bg: #ffedd5;
+  --shadow: 0 6px 20px rgba(60, 40, 140, 0.12);
+
+  --b1: #3b82f6;
+  --b2: #ec4899;
+  --b3: #22c55e;
+  --b4: #f59e0b;
+  --b5: #a855f7;
+  --b6: #14b8a6;
+
+  --radius: 20px;
+  --gap: 16px;
+  --font: ui-rounded, "SF Pro Rounded", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-right: env(safe-area-inset-right, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --safe-left: env(safe-area-inset-left, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #14121f;
+    --surface: #211e33;
+    --surface-2: #2b2742;
+    --text: #f2f0fa;
+    --muted: #aaa6c2;
+    --border: #3a3556;
+    --accent: #8f74ff;
+    --accent-2: #a28cff;
+    --on-accent: #ffffff;
+    --ok: #4ade80;
+    --ok-bg: #12351f;
+    --bad: #fb923c;
+    --bad-bg: #3d2312;
+    --shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  background: var(--bg);
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 18px;
+  line-height: 1.4;
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+  cursor: pointer;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+h1,
+h2,
+h3 {
+  margin: 0;
+  line-height: 1.15;
+}
+
+#app {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+}
+
+.screen {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: calc(var(--safe-top) + 16px) calc(var(--safe-right) + 16px)
+    calc(var(--safe-bottom) + 16px) calc(var(--safe-left) + 16px);
+}
+
+.card {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+}
+
+.muted {
+  color: var(--muted);
+}
+
+/* Tlačítka */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 12px 22px;
+  border: 0;
+  border-radius: 16px;
+  background: var(--surface-2);
+  color: var(--text);
+  font-weight: 700;
+  font-size: 19px;
+  text-decoration: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: var(--on-accent);
+  box-shadow: 0 6px 0 var(--accent-2);
+}
+
+.btn-primary:active {
+  box-shadow: 0 2px 0 var(--accent-2);
+  transform: translateY(4px);
+}
+
+.btn-big {
+  min-height: 72px;
+  font-size: 28px;
+  border-radius: 24px;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--muted);
+}
+
+.btn-icon {
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  font-size: 22px;
+}
+
+.row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.grow {
+  flex: 1;
+}
+
+/* Úvod */
+
+.home-top {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  text-align: center;
+}
+
+.logo img {
+  width: 88px;
+  height: 88px;
+  border-radius: 22px;
+  box-shadow: var(--shadow);
+}
+
+#home-hello {
+  font-size: 32px;
+}
