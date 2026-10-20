@@ -42,6 +42,7 @@ Data jsou jen v localStorage zařízení, žádný server.
 - Žádné externí fonty, CDN ani požadavky mimo vlastní doménu. Vše musí jít offline.
 - iPhone: dotykové plochy aspoň 48 px, `env(safe-area-inset-*)`, světlý i tmavý režim,
   input s písmem aspoň 16 px (jinak iOS zoomuje).
+- Status bar na iPhonu je `default` (sám se přizpůsobí světlému a tmavému režimu).
 - Konstanty učení (časy, intervaly) jsou jen v `js/learning.js`.
 - Čistá logika (`js/storage.js`, `js/facts.js`, `js/learning.js`, `js/distractors.js`,
   `js/round.js`, `js/progress.js`) nesahá na DOM a dostává `now` a `rng` parametrem.
@@ -67,6 +68,7 @@ tests/                  testy logiky (node:test)
 ```
 
 ## Příkazy
-- Testy: `node --test`
+- Testy: `node --test` (spustit před každým commitem). Hlídají i em-dash v textech,
+  seznam `ASSETS` v `sw.js` a že `index.html` nenačítá nic zvenku.
 - Lokálně: `npx serve .` (nebo `python3 -m http.server`) a otevřít http://localhost:3000
 - Ikony po změně `icons/icon.svg`: `node tools/make-icons.mjs` (potřebuje Playwright)
