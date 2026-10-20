@@ -22,9 +22,10 @@ export function product(k) {
   return a * b;
 }
 
+// Nezlomitelné mezery, aby se „7 × 8“ nerozdělilo na dva řádky.
 export function label(k) {
   const { a, b } = parse(k);
-  return a + ' × ' + b;
+  return a + '\u00a0×\u00a0' + b;
 }
 
 export const ALL_KEYS = [];

@@ -29,7 +29,7 @@ test('facts: 100 příkladů, pořadí činitelů se rozlišuje', () => {
   assert.equal(new Set(ALL_KEYS).size, 100);
   assert.ok(ALL_KEYS.includes('7x8') && ALL_KEYS.includes('8x7'));
   assert.equal(mirror('7x8'), '8x7');
-  assert.equal(label('7x8'), '7 × 8');
+  assert.equal(label('7x8'), '7\u00a0×\u00a08');
   assert.equal(product('7x8'), 56);
   assert.deepEqual(parse(key(10, 3)), { a: 10, b: 3 });
 });

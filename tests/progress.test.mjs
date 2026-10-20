@@ -52,3 +52,35 @@ test('shrnutí kola: co se zlepšilo a co procvičit', () => {
   assert.equal(report.record, true);
   assert.deepEqual(report.prev, { score: 10, ok: 2 });
 });
+
+test('statistiky pro rodiče', async () => {
+  const { parentStats, dayKey } = await import('../js/progress.js');
+  const { createEmpty } = await import('../js/storage.js');
+  const data = createEmpty(NOW);
+  Object.assign(data.facts['7x8'], { n: 6, ok: 6, lvl: 5, ms: 1500, h: [1500], last: NOW });
+  Object.assign(data.facts['8x7'], { n: 5, ok: 1, bad: 4, lvl: 0, ms: 5000, h: [-1, -1, 5000, -1, -1] });
+  Object.assign(data.facts['6x9'], { n: 4, ok: 4, lvl: 3, ms: 2000, h: [2000] });
+  Object.assign(data.facts['9x6'], { n: 3, ok: 3, lvl: 2, ms: 2500, h: [2500] });
+  data.days[dayKey(NOW)] = { n: 10, ok: 8, ms: 16000, rounds: 1, time: 90000 };
+  data.days[dayKey(NOW - 3 * 86400000)] = { n: 10, ok: 6, ms: 12000, rounds: 1, time: 60000 };
+  data.days[dayKey(NOW - 30 * 86400000)] = { n: 20, ok: 10, ms: 30000, rounds: 1, time: 100000 };
+  data.best = 400;
+
+  const s = parentStats(data, NOW);
+  assert.equal(s.known, 2);
+  assert.equal(s.sure, 1);
+  assert.equal(s.seen, 4);
+  assert.equal(s.answers, 40);
+  assert.equal(s.accuracy, 24 / 40);
+  assert.equal(s.weekAccuracy, 14 / 20);
+  assert.equal(s.avgMs, 58000 / 24);
+  assert.equal(s.rounds, 3);
+  assert.equal(s.daysPlayed, 3);
+  assert.equal(s.streak, 1);
+  assert.equal(s.lastPlayed, NOW);
+  assert.equal(s.hardest[0].key, '8x7');
+  assert.deepEqual(s.oneWay.map((x) => [x.good, x.weak]), [['7x8', '8x7']]);
+  assert.equal(s.last14.length, 14);
+  assert.equal(s.last14.at(-1).key, dayKey(NOW));
+  assert.equal(s.last14.at(-1).n, 10);
+});

@@ -116,6 +116,82 @@
         <button id="sum-home" class="btn" type="button">Domů</button>
       </div>
     </section>
+
+    <section id="screen-parents" class="screen parents" hidden>
+      <div class="parents-bar">
+        <button id="parents-back" class="btn btn-ghost" type="button">← Zpět</button>
+        <h1>Pro rodiče</h1>
+      </div>
+
+      <form id="gate" class="card stack gate">
+        <p class="muted">Tahle část je pro rodiče. Pro pokračování spočítejte:</p>
+        <label id="gate-q" for="gate-input" class="big-label">Kolik je 14&nbsp;×&nbsp;6?</label>
+        <input id="gate-input" class="input" type="text" inputmode="numeric" pattern="[0-9]*" autocomplete="off">
+        <button class="btn btn-primary" type="submit">Pokračovat</button>
+        <p id="gate-err" class="muted" hidden>To nesedí, zkuste další příklad.</p>
+      </form>
+
+      <div id="parents-body" class="stack" hidden>
+        <div id="p-problem" class="warning stack" hidden>
+          <span id="p-problem-text"></span>
+          <div class="row wrap">
+            <button id="p-problem-download" class="btn" type="button">Stáhnout poškozená data</button>
+            <button id="p-problem-reset" class="btn" type="button">Začít znovu</button>
+          </div>
+        </div>
+
+        <div id="p-tiles" class="tiles tiles-4"></div>
+
+        <div id="p-grid-card" class="card stack">
+          <h2>Tabulka příkladů</h2>
+          <p class="note">Řádek je první číslo, sloupec druhé. 7&nbsp;×&nbsp;8 a 8&nbsp;×&nbsp;7 jsou dva různé příklady, každý má svoji buňku.</p>
+          <div id="p-modes" class="seg">
+            <button type="button" data-mode="mastery" aria-pressed="true">Jistota</button>
+            <button type="button" data-mode="accuracy" aria-pressed="false">Úspěšnost</button>
+            <button type="button" data-mode="speed" aria-pressed="false">Rychlost</button>
+          </div>
+          <p id="p-mode-note" class="note"></p>
+          <div id="p-grid" class="grid10"></div>
+          <div id="p-legend" class="legend"></div>
+          <div id="p-detail" class="detail" hidden></div>
+          <p class="note">Ťukněte na buňku: ukáže se příklad i jeho otočená verze.</p>
+        </div>
+
+        <div class="card stack">
+          <h2>Nejtěžší příklady</h2>
+          <ol id="p-hardest" class="rank"></ol>
+          <p id="p-hardest-empty" class="note">Zatím žádný příklad nedělá potíže.</p>
+        </div>
+
+        <div class="card stack">
+          <h2>Jde jen jedním směrem</h2>
+          <p class="note">Jeden směr jde dobře, otočený ne. Stojí za to procvičit, že 7&nbsp;×&nbsp;8 je totéž co 8&nbsp;×&nbsp;7.</p>
+          <ul id="p-oneway" class="rank"></ul>
+          <p id="p-oneway-empty" class="note">Žádné takové dvojice.</p>
+        </div>
+
+        <div class="card stack">
+          <h2>Odpovědi za posledních 14 dní</h2>
+          <div id="p-chart" class="chart"></div>
+          <p id="p-chart-note" class="note"></p>
+        </div>
+
+        <div class="card stack settings">
+          <h2>Nastavení</h2>
+          <form id="p-name-form" class="row">
+            <input id="p-name" class="input input-sm grow" type="text" maxlength="20" autocomplete="off" aria-label="Jméno dítěte" placeholder="Jméno dítěte">
+            <button class="btn" type="submit">Uložit</button>
+          </form>
+          <button id="p-sound" class="btn" type="button" aria-pressed="true">Zvuk je zapnutý</button>
+          <button id="p-export" class="btn" type="button">Stáhnout zálohu</button>
+          <button id="p-import" class="btn" type="button">Nahrát zálohu</button>
+          <input id="p-file" type="file" accept="application/json,.json" hidden>
+          <button id="p-reset" class="btn btn-danger" type="button">Smazat všechna data</button>
+          <p id="p-status" class="note" aria-live="polite"></p>
+          <p class="note">Data jsou uložená jen v tomhle telefonu. Záloha je soubor, který jde zase nahrát. <span id="p-version"></span></p>
+        </div>
+      </div>
+    </section>
   </main>
 </body>
 </html>

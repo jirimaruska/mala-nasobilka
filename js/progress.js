@@ -1,6 +1,7 @@
 // Záznam odehraných kol a dní. Shrnutí kola a statistiky pro rodiče.
 
-import { SLOW_MS, mastery } from './learning.js';
+import { ALL_KEYS, parse, key } from './facts.js';
+import { SLOW_MS, mastery, difficulty } from './learning.js';
 
 export const MAX_ROUNDS = 200;
 export const MAX_DAYS = 730;
@@ -114,5 +115,67 @@ export function roundReport({ round, before, after, prevRound = null, record = f
     prev: prevRound ? { score: prevRound.score, ok: prevRound.ok } : null,
     improved,
     practice,
+  };
+}
+
+// Statistiky pro rodiče.
+export function parentStats(data, now) {
+  const levels = ALL_KEYS.map((k) => mastery(data.facts[k]));
+  const playedDays = Object.entries(data.days).filter(([, d]) => d?.n > 0);
+  const sum = (list, field) => list.reduce((s, [, d]) => s + (Number(d[field]) || 0), 0);
+
+  const weekKeys = new Set();
+  const last14 = [];
+  for (let i = 13; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const k = dayKey(date.getTime());
+    if (i < 7) weekKeys.add(k);
+    const d = data.days[k] ?? {};
+    last14.push({ key: k, t: date.getTime(), n: d.n || 0, ok: d.ok || 0, rounds: d.rounds || 0, time: d.time || 0 });
+  }
+  const week = playedDays.filter(([k]) => weekKeys.has(k));
+
+  const answers = sum(playedDays, 'n');
+  const ok = sum(playedDays, 'ok');
+  const weekN = sum(week, 'n');
+
+  const hardest = ALL_KEYS.filter((k) => data.facts[k].n >= 2)
+    .map((k) => ({ key: k, score: difficulty(data.facts[k]) }))
+    .filter((x) => x.score >= 0.2)
+    .sort((x, y) => y.score - x.score)
+    .slice(0, 8);
+
+  // Dvojice, kde jeden směr jde a druhý ne (např. 7 × 8 umí, 8 × 7 ne).
+  const oneWay = [];
+  for (const k of ALL_KEYS) {
+    const { a, b } = parse(k);
+    if (a >= b) continue;
+    const other = key(b, a);
+    const fa = data.facts[k];
+    const fb = data.facts[other];
+    if (fa.n === 0 || fb.n === 0) continue;
+    const diff = mastery(fa) - mastery(fb);
+    if (Math.abs(diff) >= 2) oneWay.push(diff > 0 ? { good: k, weak: other, diff } : { good: other, weak: k, diff: -diff });
+  }
+  oneWay.sort((x, y) => y.diff - x.diff);
+
+  return {
+    known: levels.filter((m) => m >= 3).length,
+    sure: levels.filter((m) => m === 4).length,
+    seen: levels.filter((m) => m > 0).length,
+    answers,
+    accuracy: answers ? ok / answers : null,
+    avgMs: ok ? sum(playedDays, 'ms') / ok : null,
+    weekAccuracy: weekN ? sum(week, 'ok') / weekN : null,
+    rounds: sum(playedDays, 'rounds'),
+    time: sum(playedDays, 'time'),
+    daysPlayed: playedDays.length,
+    streak: dayStreak(data, now),
+    best: data.best,
+    lastPlayed: Math.max(0, ...ALL_KEYS.map((k) => data.facts[k].last)),
+    hardest,
+    oneWay,
+    last14,
   };
 }
