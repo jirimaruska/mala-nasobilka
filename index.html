@@ -21,12 +21,73 @@
 </head>
 <body>
   <main id="app">
-    <section id="screen-home" class="screen">
+    <section id="screen-home" class="screen home" hidden>
       <div class="home-top">
         <div class="logo" aria-hidden="true"><img src="icons/icon.svg" alt=""></div>
         <h1 id="home-hello">Malá násobilka</h1>
       </div>
+
+      <form id="name-form" class="card stack" hidden>
+        <label for="name-input" class="big-label">Jak se jmenuješ?</label>
+        <input id="name-input" class="input" type="text" maxlength="20" autocomplete="off"
+          autocapitalize="words" enterkeyhint="done" placeholder="Tvoje jméno">
+        <button class="btn btn-primary" type="submit">Hotovo</button>
+      </form>
+
+      <div id="home-main" class="stack home-main" hidden>
+        <div class="card stack">
+          <strong id="home-known" class="home-known">Umíš 0 ze 100 příkladů</strong>
+          <div class="meter meter-big meter-stack" aria-hidden="true">
+            <span id="home-meter-known" class="m-known"></span><span id="home-meter-learning" class="m-learning"></span>
+          </div>
+          <span id="home-learning" class="muted"></span>
+          <div class="chips">
+            <span id="home-best" class="chip" hidden></span>
+            <span id="home-streak" class="chip" hidden></span>
+          </div>
+        </div>
+        <button id="home-play" class="btn btn-primary btn-big" type="button">Hrát</button>
+        <p id="home-warning" class="warning" hidden>Hra si teď nic neukládá. Řekni to rodičům.</p>
+      </div>
+
+      <div class="home-bottom">
+        <button id="home-sound" class="btn btn-ghost" type="button" aria-pressed="true">🔊 Zvuk</button>
+        <button id="home-parents" class="btn btn-ghost" type="button">Pro rodiče</button>
+      </div>
       <noscript><p class="card">Tahle hra potřebuje zapnutý JavaScript.</p></noscript>
+    </section>
+
+    <section id="screen-game" class="screen game" hidden>
+      <div class="game-bar">
+        <button id="game-pause" class="btn btn-icon" type="button" aria-label="Pauza">
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1.5" fill="currentColor"/><rect x="14" y="5" width="4" height="14" rx="1.5" fill="currentColor"/></svg>
+        </button>
+        <div class="game-progress">
+          <span id="game-step">1 / 20</span>
+          <div class="meter"><span id="game-meter"></span></div>
+        </div>
+        <div class="game-score" aria-label="Body"><span aria-hidden="true">⭐</span> <span id="game-score">0</span></div>
+      </div>
+
+      <div id="problem" class="problem" aria-live="polite"><span id="q-text"></span> = <span id="q-answer" class="ans">?</span></div>
+      <p id="game-msg" class="game-msg" aria-live="polite"></p>
+
+      <div class="bubbles">
+        <button class="slot" type="button"><span class="float"><span class="bubble"><span class="num"></span></span></span></button>
+        <button class="slot" type="button"><span class="float"><span class="bubble"><span class="num"></span></span></span></button>
+        <button class="slot" type="button"><span class="float"><span class="bubble"><span class="num"></span></span></span></button>
+        <button class="slot" type="button"><span class="float"><span class="bubble"><span class="num"></span></span></span></button>
+      </div>
+      <p id="game-hint" class="game-hint" hidden>Ťukni a jede se dál</p>
+
+      <div id="game-overlay" class="overlay" hidden>
+        <div id="game-count" class="count" aria-live="assertive"></div>
+        <div id="game-pausebox" class="card stack pausebox" hidden>
+          <h2>Pauza</h2>
+          <button id="game-resume" class="btn btn-primary btn-big" type="button">Pokračovat</button>
+          <button id="game-quit" class="btn" type="button">Ukončit kolo</button>
+        </div>
+      </div>
     </section>
   </main>
 </body>

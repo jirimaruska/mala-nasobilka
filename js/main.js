@@ -1,15 +1,39 @@
-// Start appky: service worker a přepínání obrazovek.
+// Start appky: data, service worker a přepínání obrazovek.
+
+import { openStore } from './storage.js';
+import * as sound from './sound.js';
+import { createHome } from './ui/home.js';
+import { createGame } from './ui/game.js';
 
 const screens = {};
 let current = null;
 let reloadWhenIdle = false;
 
-export function show(name) {
+function getStorage() {
+  try {
+    return window.localStorage;
+  } catch {
+    return {
+      getItem() {
+        throw new Error('localStorage není dostupné');
+      },
+      setItem() {
+        throw new Error('localStorage není dostupné');
+      },
+    };
+  }
+}
+
+function show(name, params) {
+  if (current && current !== name) screens[current]?.leave?.();
+  if (reloadWhenIdle && name === 'home') {
+    location.reload();
+    return;
+  }
   for (const el of document.querySelectorAll('.screen')) el.hidden = el.id !== 'screen-' + name;
   current = name;
   window.scrollTo(0, 0);
-  screens[name]?.enter?.();
-  if (reloadWhenIdle && name === 'home') location.reload();
+  screens[name]?.enter?.(params);
 }
 
 function registerServiceWorker() {
@@ -23,6 +47,14 @@ function registerServiceWorker() {
   });
   navigator.serviceWorker.register('sw.js').catch(() => {});
 }
+
+const store = openStore(getStorage());
+sound.setEnabled(store.data.settings.sound !== false);
+navigator.storage?.persist?.().catch(() => {});
+
+const app = { store, sound, show };
+screens.home = createHome(app);
+screens.game = createGame(app);
 
 registerServiceWorker();
 show('home');
