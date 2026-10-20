@@ -89,6 +89,33 @@
         </div>
       </div>
     </section>
+
+    <section id="screen-summary" class="screen summary" hidden>
+      <div class="summary-head">
+        <div id="sum-emoji" class="summary-emoji" aria-hidden="true"></div>
+        <h1 id="sum-title">Hotovo!</h1>
+        <p class="sum-score"><span aria-hidden="true">⭐</span> <span id="sum-score">0</span> <span id="sum-points">bodů</span></p>
+        <p id="sum-compare" class="sum-compare" hidden></p>
+      </div>
+      <div class="tiles">
+        <div class="tile"><strong id="sum-ok">0 z 20</strong><span>správně</span></div>
+        <div class="tile"><strong id="sum-avg">–</strong><span>průměrně</span></div>
+        <div class="tile"><strong id="sum-streak">0</strong><span>nejdelší série</span></div>
+      </div>
+      <div id="sum-improved-box" class="card stack" hidden>
+        <h2>Tyhle už jdou líp</h2>
+        <ul id="sum-improved" class="fact-list good"></ul>
+      </div>
+      <div id="sum-practice-box" class="card stack" hidden>
+        <h2>Ještě potrénuj</h2>
+        <ul id="sum-practice" class="fact-list todo"></ul>
+      </div>
+      <p id="sum-smooth" class="card sum-smooth" hidden>Všechno šlo hladce. Paráda!</p>
+      <div class="actions">
+        <button id="sum-again" class="btn btn-primary btn-big" type="button">Hrát znovu</button>
+        <button id="sum-home" class="btn" type="button">Domů</button>
+      </div>
+    </section>
   </main>
 </body>
 </html>

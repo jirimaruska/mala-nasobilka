@@ -21,6 +21,7 @@ const ASSETS = [
   'js/ui/dom.js',
   'js/ui/home.js',
   'js/ui/game.js',
+  'js/ui/summary.js',
   'icons/icon.svg',
   'icons/icon-180.png',
   'icons/icon-192.png',

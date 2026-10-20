@@ -4,6 +4,7 @@ import { openStore } from './storage.js';
 import * as sound from './sound.js';
 import { createHome } from './ui/home.js';
 import { createGame } from './ui/game.js';
+import { createSummary } from './ui/summary.js';
 
 const screens = {};
 let current = null;
@@ -55,6 +56,7 @@ navigator.storage?.persist?.().catch(() => {});
 const app = { store, sound, show };
 screens.home = createHome(app);
 screens.game = createGame(app);
+screens.summary = createSummary(app);
 
 registerServiceWorker();
 show('home');

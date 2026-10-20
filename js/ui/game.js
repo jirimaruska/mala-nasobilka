@@ -4,7 +4,7 @@ import { parse, product } from '../facts.js';
 import { BUBBLE_MS, planRound, recordAnswer, shuffle } from '../learning.js';
 import { makeOptions } from '../distractors.js';
 import { createRound, currentKey, isDone, isRetry, answerCurrent } from '../round.js';
-import { logAnswer, logRound } from '../progress.js';
+import { logAnswer, logRound, roundReport } from '../progress.js';
 import { $, $$, el, reducedMotion } from './dom.js';
 
 const COLORS = ['--b1', '--b2', '--b3', '--b4', '--b5', '--b6'];
@@ -105,7 +105,7 @@ export function createGame(app) {
     round = createRound(plan, now);
     before = {};
     for (const k of plan.keys) before[k] = JSON.parse(JSON.stringify(data.facts[k]));
-    prev = { round: data.rounds.at(-1) ?? null, best: data.best };
+    prev = { round: data.rounds.at(-1) ?? null };
     resetBoard();
     problem.classList.add('blank');
     qText.textContent = '';
@@ -330,10 +330,10 @@ export function createGame(app) {
   function finish() {
     stop();
     const data = app.store.data;
-    logRound(data, round, Date.now());
+    const { record } = logRound(data, round, Date.now());
     app.store.save();
     app.sound.finish();
-    app.show('home');
+    app.show('summary', roundReport({ round, before, after: data.facts, prevRound: prev.round, record }));
   }
 
   slots.forEach((slot, i) => {

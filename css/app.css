@@ -325,6 +325,127 @@ h3 {
   gap: 12px;
 }
 
+/* Shrnutí */
+
+.summary-head {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.summary-emoji {
+  font-size: 56px;
+  line-height: 1;
+  animation: beat 0.6s ease-out;
+}
+
+#sum-title {
+  font-size: 30px;
+}
+
+.sum-score {
+  margin: 4px 0 0;
+  font-size: 34px;
+  font-weight: 800;
+}
+
+.sum-compare {
+  margin: 0;
+  color: var(--ok);
+  font-weight: 700;
+}
+
+.tiles {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+}
+
+.tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: 12px 6px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+  text-align: center;
+}
+
+.tile strong {
+  font-size: 22px;
+  font-variant-numeric: tabular-nums;
+}
+
+.tile span {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+.card h2 {
+  font-size: 20px;
+}
+
+.fact-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.fact-list li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 12px;
+  padding: 10px 12px;
+  border-radius: 14px;
+}
+
+.fact-list.good li {
+  background: var(--ok-bg);
+}
+
+.fact-list.todo li {
+  background: var(--bad-bg);
+}
+
+.fact-list li.more {
+  background: none;
+  color: var(--muted);
+  padding: 0 12px;
+}
+
+.fact-eq {
+  font-size: 22px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.fact-why {
+  color: var(--muted);
+  font-size: 16px;
+}
+
+.sum-smooth {
+  margin: 0;
+  text-align: center;
+  font-weight: 700;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-top: auto;
+}
+
 /* Hra */
 
 .game {
