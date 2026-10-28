@@ -1,6 +1,6 @@
 // Záznam odehraných kol a dní. Shrnutí kola a statistiky pro rodiče.
 
-import { ALL_KEYS, parse, key } from './facts.js';
+import { ALL_KEYS, MUL_KEYS, parse, key } from './facts.js';
 import { SLOW_MS, mastery, difficulty } from './learning.js';
 
 export const MAX_ROUNDS = 200;
@@ -148,7 +148,7 @@ export function parentStats(data, now) {
 
   // Dvojice, kde jeden směr jde a druhý ne (např. 7 × 8 umí, 8 × 7 ne).
   const oneWay = [];
-  for (const k of ALL_KEYS) {
+  for (const k of MUL_KEYS) {
     const { a, b } = parse(k);
     if (a >= b) continue;
     const other = key(b, a);

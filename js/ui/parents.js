@@ -1,6 +1,6 @@
 // Pro rodiče: pojistka, tabulka 10 × 10, nejtěžší příklady, statistiky a nastavení.
 
-import { MIN, MAX, ALL_KEYS, key, label, product, mirror } from '../facts.js';
+import { MIN, MAX, ALL_KEYS, key, label, answer, mirror } from '../facts.js';
 import { FAST_MS, SLOW_MS, MASTERY_LABELS, mastery, recentAccuracy } from '../learning.js';
 import { parentStats, dayKey } from '../progress.js';
 import { createEmpty, exportJson, importJson, DATA_VER } from '../storage.js';
@@ -209,7 +209,7 @@ export function createParents(app) {
     }
     rows.push(['Další opakování', nextReview(f, now)]);
     return el('div', { class: 'dcard' }, [
-      el('strong', { class: 'deq', text: label(k) + ' = ' + product(k) }),
+      el('strong', { class: 'deq', text: label(k) + ' = ' + answer(k) }),
       el(
         'dl',
         {},
@@ -249,7 +249,7 @@ export function createParents(app) {
 
   function factRow(k, extra) {
     return el('li', {}, [
-      el('button', { type: 'button', class: 'linkish', text: label(k) + ' = ' + product(k), onclick: () => showInGrid(k) }),
+      el('button', { type: 'button', class: 'linkish', text: label(k) + ' = ' + answer(k), onclick: () => showInGrid(k) }),
       el('span', { class: 'muted', text: extra }),
     ]);
   }

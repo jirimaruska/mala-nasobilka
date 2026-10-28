@@ -1,10 +1,10 @@
 // Ukládání do localStorage. Klíč se NIKDY nemění.
 // Změna formátu dat: zvýšit DATA_VER a přidat krok do MIGRATIONS (viz CLAUDE.md).
 
-import { ALL_KEYS, isZero } from './facts.js';
+import { ALL_KEYS, MUL_KEYS, DIV_KEYS, OPS, isZero } from './facts.js';
 
 export const STORAGE_KEY = 'mala-nasobilka';
-export const DATA_VER = 2;
+export const DATA_VER = 3;
 
 // Kroky migrace: MIGRATIONS[n] převede data verze n na verzi n + 1.
 // Krok jen přidává a převádí, nic nemaže.
@@ -12,8 +12,16 @@ const MIGRATIONS = {
   // 1 → 2: přibylo násobení nulou (0–10 × 0–10). Doplní prázdné příklady s nulou.
   1(d) {
     const facts = isObject(d.facts) ? { ...d.facts } : {};
-    for (const k of ALL_KEYS) if (isZero(k) && !isObject(facts[k])) facts[k] = emptyFact();
+    for (const k of MUL_KEYS) if (isZero(k) && !isObject(facts[k])) facts[k] = emptyFact();
     return { ...d, facts, ver: 2 };
+  },
+  // 2 → 3: přibylo dělení. Doplní prázdné příklady dělení a volbu, co se procvičuje (obojí).
+  2(d) {
+    const facts = isObject(d.facts) ? { ...d.facts } : {};
+    for (const k of DIV_KEYS) if (!isObject(facts[k])) facts[k] = emptyFact();
+    const settings = isObject(d.settings) ? { ...d.settings } : {};
+    if (!OPS.includes(settings.ops)) settings.ops = 'both';
+    return { ...d, facts, settings, ver: 3 };
   },
 };
 
@@ -40,7 +48,7 @@ export function createEmpty(now) {
     ver: DATA_VER,
     createdAt: now,
     name: '',
-    settings: { sound: true },
+    settings: { sound: true, ops: 'both' },
     facts,
     rounds: [],
     days: {},
@@ -84,11 +92,13 @@ function normalize(d, now) {
   const facts = isObject(d.facts) ? d.facts : {};
   const outFacts = { ...facts };
   for (const k of ALL_KEYS) outFacts[k] = normalizeFact(facts[k]);
+  const settings = { sound: true, ops: 'both', ...(isObject(d.settings) ? d.settings : {}) };
+  if (!OPS.includes(settings.ops)) settings.ops = 'both';
   return {
     ...d,
     createdAt: num(d.createdAt, now),
     name: typeof d.name === 'string' ? d.name : '',
-    settings: { sound: true, ...(isObject(d.settings) ? d.settings : {}) },
+    settings,
     facts: outFacts,
     rounds: Array.isArray(d.rounds) ? d.rounds.filter(isObject) : [],
     days: isObject(d.days) ? d.days : {},

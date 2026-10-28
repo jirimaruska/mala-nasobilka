@@ -10,7 +10,22 @@ import {
   exportJson,
   importJson,
 } from '../js/storage.js';
-import { ALL_KEYS, key, mirror, label, parse, product, isZero } from '../js/facts.js';
+import {
+  ALL_KEYS,
+  MUL_KEYS,
+  DIV_KEYS,
+  key,
+  divKey,
+  mirror,
+  label,
+  parse,
+  answer,
+  isZero,
+  isDiv,
+  mulOf,
+  divOf,
+  family,
+} from '../js/facts.js';
 
 const NOW = Date.UTC(2026, 9, 20, 16, 0);
 
@@ -24,28 +39,58 @@ function memoryStorage(initial = {}) {
   };
 }
 
-test('facts: 121 příkladů 0–10 × 0–10, pořadí činitelů se rozlišuje', () => {
-  assert.equal(ALL_KEYS.length, 121);
-  assert.equal(new Set(ALL_KEYS).size, 121);
-  assert.ok(ALL_KEYS.includes('7x8') && ALL_KEYS.includes('8x7'));
-  assert.ok(ALL_KEYS.includes('7x0') && ALL_KEYS.includes('0x7') && ALL_KEYS.includes('0x0'));
-  assert.equal(ALL_KEYS.filter(isZero).length, 21);
+test('facts: 121 násobení 0–10 × 0–10, pořadí činitelů se rozlišuje', () => {
+  assert.equal(MUL_KEYS.length, 121);
+  assert.equal(new Set(MUL_KEYS).size, 121);
+  assert.ok(MUL_KEYS.includes('7x8') && MUL_KEYS.includes('8x7'));
+  assert.ok(MUL_KEYS.includes('7x0') && MUL_KEYS.includes('0x7') && MUL_KEYS.includes('0x0'));
+  assert.equal(MUL_KEYS.filter(isZero).length, 21);
   assert.equal(isZero('7x8'), false);
-  assert.equal(product('0x7'), 0);
+  assert.equal(answer('0x7'), 0);
   assert.equal(mirror('7x8'), '8x7');
   assert.equal(label('7x8'), '7\u00a0×\u00a08');
-  assert.equal(product('7x8'), 56);
-  assert.deepEqual(parse(key(10, 3)), { a: 10, b: 3 });
+  assert.equal(answer('7x8'), 56);
+  assert.deepEqual(parse(key(10, 3)), { op: 'mul', a: 10, b: 3 });
+});
+
+test('facts: 110 dělení, dělitel 1–10, nulou se nedělí', () => {
+  assert.equal(DIV_KEYS.length, 110);
+  assert.equal(new Set(DIV_KEYS).size, 110);
+  assert.equal(ALL_KEYS.length, 231);
+  assert.ok(DIV_KEYS.includes('56:8') && DIV_KEYS.includes('56:7') && DIV_KEYS.includes('0:5'));
+  assert.ok(DIV_KEYS.every((k) => parse(k).b >= 1 && parse(k).b <= 10));
+  assert.ok(DIV_KEYS.every((k) => Number.isInteger(answer(k)) && answer(k) >= 0 && answer(k) <= 10));
+  assert.ok(!DIV_KEYS.some((k) => k.endsWith(':0')));
+  assert.equal(DIV_KEYS.filter(isZero).length, 10);
+  assert.equal(isDiv('56:8'), true);
+  assert.equal(isDiv('7x8'), false);
+  assert.equal(answer('56:8'), 7);
+  assert.equal(label('56:8'), '56\u00a0:\u00a08');
+  assert.deepEqual(parse(divKey(56, 8)), { op: 'div', a: 56, b: 8 });
+  assert.equal(mulOf('56:8'), '7x8');
+  assert.equal(mulOf('0:5'), '0x5');
+  assert.equal(divOf('7x8'), '56:8');
+  assert.equal(divOf('7x0'), null);
+  for (const k of DIV_KEYS) assert.equal(divOf(mulOf(k)), k);
+});
+
+test('facts: rodina příkladů', () => {
+  assert.deepEqual(family('7x8').sort(), ['56:7', '56:8', '7x8', '8x7']);
+  assert.deepEqual(family('56:7').sort(), ['56:7', '56:8', '7x8', '8x7']);
+  assert.deepEqual(family('7x7').sort(), ['49:7', '7x7']);
+  assert.deepEqual(family('0x5').sort(), ['0:5', '0x5', '5x0']);
+  assert.deepEqual(family('0x0'), ['0x0']);
 });
 
 test('klíč localStorage je mala-nasobilka', () => {
   assert.equal(STORAGE_KEY, 'mala-nasobilka');
 });
 
-test('createEmpty má verzi a všech 121 příkladů', () => {
+test('createEmpty má verzi, všech 231 příkladů a procvičuje obojí', () => {
   const d = createEmpty(NOW);
   assert.equal(d.ver, DATA_VER);
-  assert.equal(Object.keys(d.facts).length, 121);
+  assert.equal(Object.keys(d.facts).length, 231);
+  assert.equal(d.settings.ops, 'both');
   assert.equal(d.facts['7x8'].n, 0);
 });
 
@@ -65,7 +110,7 @@ test('migrate: data bez ver jsou verze 1, převedou se a nic se neztratí', () =
   assert.equal(d.facts['7x8'].ok, 3);
   assert.equal(d.facts['7x8'].lvl, 2);
   assert.deepEqual(d.facts['7x8'].h, []);
-  assert.equal(Object.keys(d.facts).length, 121);
+  assert.equal(Object.keys(d.facts).length, 231);
 });
 
 // Vzorek dat, jak je ukládala verze 1 appky (jen 1–10 × 1–10).
@@ -90,14 +135,26 @@ function sampleV1() {
   };
 }
 
-test('migrate: verze 1 → 2 doplní příklady s nulou a nic jiného nezmění', () => {
+// Vzorek dat verze 2 (0–10 × 0–10, bez dělení a bez volby ops).
+function sampleV2() {
+  const d = sampleV1();
+  for (const k of MUL_KEYS) d.facts[k] ??= { n: 0, ok: 0, bad: 0, late: 0, ms: null, best: null, lvl: 0, due: 0, last: 0, h: [], wrong: [] };
+  d.facts['7x0'] = { n: 3, ok: 2, bad: 1, late: 0, ms: 2100, best: 1800, lvl: 1, due: NOW, last: NOW - 500, h: [-1, 2400, 1800], wrong: [7] };
+  d.ver = 2;
+  d.settings = { sound: true };
+  return d;
+}
+
+test('migrate: verze 1 → 3 doplní nulu i dělení a nic jiného nezmění', () => {
   const v1 = sampleV1();
   const d = migrate(v1, NOW);
-  assert.equal(d.ver, 2);
-  assert.equal(Object.keys(d.facts).length, 121);
+  assert.equal(d.ver, 3);
+  assert.equal(Object.keys(d.facts).length, 231);
   assert.deepEqual(d.facts['7x8'], v1.facts['7x8']);
   for (const k of Object.keys(v1.facts)) assert.deepEqual(d.facts[k], v1.facts[k], k);
   for (const k of ALL_KEYS.filter(isZero)) assert.equal(d.facts[k].n, 0, k);
+  for (const k of DIV_KEYS) assert.equal(d.facts[k].n, 0, k);
+  assert.equal(d.settings.ops, 'both');
   assert.equal(d.name, 'Dítě');
   assert.equal(d.settings.sound, false);
   assert.deepEqual(d.rounds, v1.rounds);
@@ -107,22 +164,40 @@ test('migrate: verze 1 → 2 doplní příklady s nulou a nic jiného nezmění'
   assert.equal(d.extra, 'zachovat');
 });
 
-test('migrate: verze 1 uložená v telefonu se po načtení převede a uloží jako verze 2', () => {
-  const storage = memoryStorage({ [STORAGE_KEY]: JSON.stringify(sampleV1()) });
-  const store = openStore(storage, NOW);
-  assert.equal(store.problem, null);
-  assert.equal(store.data.ver, 2);
-  assert.equal(store.save(), true);
-  const saved = JSON.parse(storage.map.get(STORAGE_KEY));
-  assert.equal(saved.ver, 2);
-  assert.equal(saved.facts['7x8'].n, 6);
-  assert.equal(saved.facts['0x7'].n, 0);
+test('migrate: verze 2 → 3 doplní dělení, volbu obojí a nic jiného nezmění', () => {
+  const v2 = sampleV2();
+  const d = migrate(v2, NOW);
+  assert.equal(d.ver, 3);
+  assert.equal(Object.keys(d.facts).length, 231);
+  for (const k of MUL_KEYS) assert.deepEqual(d.facts[k], v2.facts[k], k);
+  for (const k of DIV_KEYS) assert.equal(d.facts[k].n, 0, k);
+  assert.deepEqual(d.settings, { sound: true, ops: 'both' });
+  assert.equal(d.name, 'Dítě');
+  assert.equal(d.best, 321);
+  assert.deepEqual(d.rounds, v2.rounds);
+  assert.deepEqual(d.days, v2.days);
+  assert.equal(d.extra, 'zachovat');
 });
 
-test('migrate: data verze 2 zůstanou verze 2', () => {
-  const d = migrate(migrate(sampleV1(), NOW), NOW);
-  assert.equal(d.ver, 2);
+test('migrate: verze 2 uložená v telefonu se po načtení převede a uloží jako verze 3', () => {
+  const storage = memoryStorage({ [STORAGE_KEY]: JSON.stringify(sampleV2()) });
+  const store = openStore(storage, NOW);
+  assert.equal(store.problem, null);
+  assert.equal(store.data.ver, 3);
+  assert.equal(store.save(), true);
+  const saved = JSON.parse(storage.map.get(STORAGE_KEY));
+  assert.equal(saved.ver, 3);
+  assert.equal(saved.facts['7x8'].n, 6);
+  assert.equal(saved.facts['7x0'].n, 3);
+  assert.equal(saved.facts['56:8'].n, 0);
+});
+
+test('migrate: data verze 3 zůstanou verze 3, neplatná volba ops je obojí', () => {
+  const d = migrate(migrate(sampleV2(), NOW), NOW);
+  assert.equal(d.ver, 3);
   assert.equal(d.facts['7x8'].n, 6);
+  assert.equal(migrate({ ver: 3, facts: {}, settings: { ops: 'div' } }, NOW).settings.ops, 'div');
+  assert.equal(migrate({ ver: 3, facts: {}, settings: { ops: 'nesmysl' } }, NOW).settings.ops, 'both');
 });
 
 test('migrate: doplní chybějící příklady a pole, zachová neznámá pole', () => {

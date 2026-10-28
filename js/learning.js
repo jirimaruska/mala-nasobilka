@@ -1,7 +1,7 @@
 // Učení: sledování každého příkladu, spaced repetition a výběr příkladů do kola.
 // Všechny konstanty učení jsou tady.
 
-import { ALL_KEYS, mirror, isZero } from './facts.js';
+import { ALL_KEYS, MUL_KEYS, DIV_KEYS, OPS, family, isDiv, isZero, mulOf } from './facts.js';
 
 export const BUBBLE_MS = 7000; // jak dlouho bubliny vydrží
 export const FAST_MS = 3000; // do téhle doby je odpověď rychlá (příklad jde zpaměti)
@@ -23,6 +23,10 @@ const MIN_NEW = 3; // pár nových příkladů v každém kole, dokud nějaké z
 // Krát nula je jedno pravidlo, ne 21 věcí k zapamatování: v kole nanejvýš 2 příklady s nulou.
 // Opakování po chybě v kole se do limitu nepočítá.
 export const ZERO_PER_ROUND = 2;
+// Dělení přichází za násobením: nové 56 : 8 až když 7 × 8 aspoň „učí se“ (mastery 2).
+export const DIV_UNLOCK = 2;
+// Nových dělení v kole nanejvýš tolik, ať násobení nevypadne (při procvičování obojího).
+export const NEW_DIV_PER_ROUND = 6;
 
 export const MASTERY_LABELS = ['Ještě nehráno', 'Zatím nejde', 'Učí se', 'Umí', 'Umí jistě'];
 
@@ -122,15 +126,15 @@ function interval(fact) {
   return Math.max(INTERVALS[fact.lvl] ?? 0, INTERVALS[1]);
 }
 
-// Seřadí příklady tak, aby stejný příklad ani jeho otočená verze (8 × 7 po 7 × 8)
-// nebyly těsně za sebou.
+// Seřadí příklady tak, aby stejný příklad ani nikdo z jeho rodiny (7 × 8, 8 × 7, 56 : 8,
+// 56 : 7) nebyli těsně za sebou. Jinak by šel výsledek opsat z předchozí otázky.
 export function arrange(keys, rng = Math.random) {
   const pool = shuffle(keys.slice(), rng);
   const out = [];
-  // Konflikt, když je stejný nebo otočený příklad do 2 pozic před nebo za místem vložení.
+  // Konflikt, když je příklad ze stejné rodiny do 2 pozic před nebo za místem vložení.
   const fitsAt = (k, pos) => {
-    const m = mirror(k);
-    return out.slice(Math.max(0, pos - 2), pos + 2).every((x) => x !== k && x !== m);
+    const fam = family(k);
+    return out.slice(Math.max(0, pos - 2), pos + 2).every((x) => !fam.includes(x));
   };
   while (pool.length) {
     const i = pool.findIndex((k) => fitsAt(k, out.length));
@@ -155,9 +159,16 @@ export function arrange(keys, rng = Math.random) {
 // Vybere příklady do kola.
 // Pořadí důležitosti: splatné (co nejde nejdřív), nové, pár jistých, nejbližší k termínu.
 // Příkladů s nulou je nanejvýš ZERO_PER_ROUND.
+// ops: 'both' (násobení i dělení), 'mul' (jen násobení), 'div' (jen dělení).
+// Při 'both' je nové dělení jen za násobením, které už aspoň trochu jde, a nanejvýš
+// NEW_DIV_PER_ROUND v kole. Při 'div' se dělení neomezuje, rodič ho chce procvičovat.
 // Vrací { keys, kinds }, kinds[key] je 'due' | 'new' | 'sure' | 'soon'.
-export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
-  const entries = shuffle(ALL_KEYS.slice(), rng).map((k) => ({ k, f: facts[k] }));
+export function planRound(facts, now, rng = Math.random, { len = ROUND_LEN, ops = 'both' } = {}) {
+  const mode = OPS.includes(ops) ? ops : 'both';
+  const pool = mode === 'mul' ? MUL_KEYS : mode === 'div' ? DIV_KEYS : ALL_KEYS;
+  const limitDiv = mode === 'both';
+  const unlocked = (k) => !limitDiv || !isDiv(k) || mastery(facts[mulOf(k)]) >= DIV_UNLOCK;
+  const entries = shuffle(pool.slice(), rng).map((k) => ({ k, f: facts[k] }));
   const due = entries
     .filter((e) => e.f.n > 0 && e.f.due <= now)
     .sort(
@@ -166,7 +177,7 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
         difficulty(y.f) - difficulty(x.f) ||
         (now - y.f.due) / interval(y.f) - (now - x.f.due) / interval(x.f)
     );
-  const fresh = entries.filter((e) => e.f.n === 0);
+  const fresh = entries.filter((e) => e.f.n === 0 && unlocked(e.k));
   const waiting = entries.filter((e) => e.f.n > 0 && e.f.due > now);
   const sure = waiting.filter((e) => e.f.lvl >= 3);
   const soon = waiting
@@ -175,14 +186,17 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
 
   const picked = new Map();
   let zeros = 0;
+  let newDivs = 0;
   const take = (list, kind, count) => {
     for (const e of list) {
       if (count <= 0 || picked.size >= len) break;
       if (picked.has(e.k)) continue;
-      if (isZero(e.k)) {
-        if (zeros >= ZERO_PER_ROUND) continue;
-        zeros += 1;
-      }
+      const zero = isZero(e.k);
+      const newDiv = limitDiv && e.f.n === 0 && isDiv(e.k);
+      if (zero && zeros >= ZERO_PER_ROUND) continue;
+      if (newDiv && newDivs >= NEW_DIV_PER_ROUND) continue;
+      if (zero) zeros += 1;
+      if (newDiv) newDivs += 1;
       picked.set(e.k, kind);
       count -= 1;
     }
@@ -193,6 +207,8 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
   const sureCount = Math.min(SURE_SLOTS, sure.length);
   const newCount = Math.min(MIN_NEW, fresh.filter((e) => !isZero(e.k)).length);
   take(due, 'due', len - picked.size - sureCount - newCount);
+  // Nové násobení má přednost, dělení na něm stojí. Zbytek nových se míchá.
+  take(fresh.filter((e) => !isDiv(e.k)), 'new', newCount);
   take(fresh, 'new', len - picked.size - sureCount);
   take(sure, 'sure', sureCount);
   take(soon, 'soon', len - picked.size);

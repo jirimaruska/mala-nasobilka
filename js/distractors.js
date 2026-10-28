@@ -1,6 +1,6 @@
 // Špatné možnosti do bublin. Ne náhodná čísla, ale typické omyly.
 
-import { MAX } from './facts.js';
+import { MAX, parse } from './facts.js';
 import { shuffle } from './learning.js';
 
 const LIMIT = 110; // vyšší čísla by byla moc snadno poznat jako špatná
@@ -134,4 +134,10 @@ export function divCandidates(c, b, fact = null) {
 export function makeDivOptions(c, b, fact = null, rng = Math.random) {
   const a = c / b;
   return choose(a, divCandidates(c, b, fact), [a - 1, a + 1], fact, rng, 0);
+}
+
+// Možnosti pro jakýkoli příklad (násobení i dělení).
+export function optionsFor(k, fact = null, rng = Math.random) {
+  const { op, a, b } = parse(k);
+  return op === 'div' ? makeDivOptions(a, b, fact, rng) : makeOptions(a, b, fact, rng);
 }

@@ -1,6 +1,6 @@
 // Shrnutí po kole: body, co se zlepšilo a co ještě potrénovat.
 
-import { label, product } from '../facts.js';
+import { label, answer } from '../facts.js';
 import { $, el, plural, seconds } from './dom.js';
 
 const MAX_ITEMS = 5;
@@ -33,7 +33,7 @@ function fillList(list, items) {
   list.replaceChildren(
     ...items.slice(0, MAX_ITEMS).map((x) =>
       el('li', {}, [
-        el('span', { class: 'fact-eq', text: label(x.key) + ' = ' + product(x.key) }),
+        el('span', { class: 'fact-eq', text: label(x.key) + ' = ' + answer(x.key) }),
         el('span', { class: 'fact-why', text: WHY[x.why](x) }),
       ])
     )

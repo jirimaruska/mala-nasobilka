@@ -1,8 +1,8 @@
 // Herní obrazovka: příklad, 4 bubliny, časování, pauza.
 
-import { parse, product, isZero } from '../facts.js';
+import { answer, isZero, label } from '../facts.js';
 import { BUBBLE_MS, planRound, recordAnswer, shuffle } from '../learning.js';
-import { makeOptions } from '../distractors.js';
+import { optionsFor } from '../distractors.js';
 import { createRound, currentKey, isDone, isRetry, answerCurrent } from '../round.js';
 import { logAnswer, logRound, roundReport } from '../progress.js';
 import { $, $$, el, reducedMotion } from './dom.js';
@@ -103,7 +103,7 @@ export function createGame(app) {
   function start() {
     const data = app.store.data;
     const now = Date.now();
-    const plan = planRound(data.facts, now);
+    const plan = planRound(data.facts, now, Math.random, { ops: data.settings.ops });
     round = createRound(plan, now);
     before = {};
     for (const k of plan.keys) before[k] = JSON.parse(JSON.stringify(data.facts[k]));
@@ -152,10 +152,9 @@ export function createGame(app) {
     }
     resetBoard();
     const key = currentKey(round);
-    const { a, b } = parse(key);
-    options = makeOptions(a, b, app.store.data.facts[key]);
+    options = optionsFor(key, app.store.data.facts[key]);
     const colors = shuffle(COLORS.slice()).slice(0, 4);
-    qText.textContent = a + ' × ' + b;
+    qText.textContent = label(key);
     problem.classList.remove('blank');
     slots.forEach((slot, i) => {
       slot.style.setProperty('--c', 'var(' + colors[i] + ')');
@@ -182,7 +181,7 @@ export function createGame(app) {
   function onTap(i) {
     if (phase !== 'question') return;
     const ms = Math.round(elapsed());
-    const ok = options[i] === product(currentKey(round));
+    const ok = options[i] === answer(currentKey(round));
     resolve(ok ? 'ok' : 'bad', i, ms);
   }
 
@@ -190,7 +189,7 @@ export function createGame(app) {
     clearTimers();
     phase = 'feedback';
     const key = currentKey(round);
-    const correct = product(key);
+    const correct = answer(key);
     const correctIndex = options.indexOf(correct);
     const chosen = index === null ? null : options[index];
     const data = app.store.data;

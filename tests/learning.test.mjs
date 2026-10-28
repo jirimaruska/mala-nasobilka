@@ -14,9 +14,11 @@ import {
   SLOW_MS,
   MAX_LVL,
   ZERO_PER_ROUND,
+  DIV_UNLOCK,
+  NEW_DIV_PER_ROUND,
 } from '../js/learning.js';
 import { emptyFact } from '../js/storage.js';
-import { ALL_KEYS, mirror, isZero } from '../js/facts.js';
+import { ALL_KEYS, MUL_KEYS, DIV_KEYS, mirror, isZero, isDiv, mulOf, family } from '../js/facts.js';
 import { NOW, MINUTE, HOUR, seeded, freshData } from './helpers.mjs';
 
 const mid = () => 0.5; // bez rozptylu: odstup přesně podle INTERVALS
@@ -228,6 +230,85 @@ test('7 × 8 a 8 × 7 nejsou blíž než ob dva příklady', () => {
     for (let i = 1; i < out.length; i++) {
       const near = out.slice(Math.max(0, i - 2), i);
       assert.ok(!near.includes(mirror(out[i])), `seed ${seed}: ${out.join(' ')}`);
+    }
+  }
+});
+
+// Dítě, které má násobení rozehrané: odpovídající násobení „učí se“ nebo „umí“.
+function knowsMultiplication(d, level = 3) {
+  MUL_KEYS.forEach((k, i) => Object.assign(d.facts[k], { n: 3, ok: 3, lvl: level, due: NOW + (i + 1) * HOUR }));
+}
+
+test('dělení: nové jen za násobením, které aspoň trochu jde', () => {
+  const d = freshData();
+  for (let seed = 1; seed <= 10; seed++) {
+    const plan = planRound(d.facts, NOW, seeded(seed));
+    assert.equal(plan.keys.filter(isDiv).length, 0, 'na začátku žádné dělení');
+  }
+  Object.assign(d.facts['7x8'], { n: 2, ok: 2, lvl: DIV_UNLOCK, due: NOW + HOUR });
+  let seen = 0;
+  for (let seed = 1; seed <= 30; seed++) {
+    const plan = planRound(d.facts, NOW, seeded(seed));
+    checkPlan(plan);
+    const divs = plan.keys.filter(isDiv);
+    for (const k of divs) assert.equal(mulOf(k), '7x8', k);
+    seen += divs.length;
+  }
+  assert.ok(seen > 0, '56 : 8 se má objevit');
+});
+
+test('dělení: nových v kole nanejvýš NEW_DIV_PER_ROUND, už hraná dělení podle potřeby', () => {
+  const d = freshData();
+  knowsMultiplication(d);
+  for (let seed = 1; seed <= 20; seed++) {
+    const plan = planRound(d.facts, NOW, seeded(seed));
+    checkPlan(plan);
+    const newDivs = plan.keys.filter((k) => isDiv(k) && d.facts[k].n === 0);
+    assert.ok(newDivs.length > 0 && newDivs.length <= NEW_DIV_PER_ROUND, String(newDivs.length));
+  }
+  const weakDiv = ['56:8', '56:7', '63:9', '42:6', '48:8', '54:9', '72:8', '81:9'];
+  for (const k of weakDiv) Object.assign(d.facts[k], { n: 3, bad: 3, lvl: 0, due: NOW - HOUR, h: [-1, -1, -1] });
+  const plan = planRound(d.facts, NOW, seeded(3));
+  checkPlan(plan);
+  for (const k of weakDiv) assert.equal(plan.kinds[k], 'due', k);
+});
+
+test('procvičovat jen násobení nebo jen dělení', () => {
+  const d = freshData();
+  knowsMultiplication(d, 1);
+  for (let seed = 1; seed <= 10; seed++) {
+    const mul = planRound(d.facts, NOW, seeded(seed), { ops: 'mul' });
+    checkPlan(mul);
+    assert.ok(mul.keys.every((k) => !isDiv(k)));
+    // Jen dělení: bez omezení, i když násobení ještě nejde.
+    const div = planRound(freshData().facts, NOW, seeded(seed), { ops: 'div' });
+    checkPlan(div);
+    assert.ok(div.keys.every(isDiv));
+  }
+  const unknown = planRound(d.facts, NOW, seeded(1), { ops: 'nesmysl' });
+  checkPlan(unknown);
+});
+
+test('nula u dělení se počítá do limitu nul', () => {
+  const d = freshData();
+  knowsMultiplication(d);
+  for (const k of ['0:3', '0:7', '0:9']) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
+  for (const k of ['7x0', '0x4']) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
+  for (let seed = 1; seed <= 10; seed++) checkPlan(planRound(d.facts, NOW, seeded(seed)));
+  const div = planRound(d.facts, NOW, seeded(4), { ops: 'div' });
+  checkPlan(div);
+});
+
+test('příklady ze stejné rodiny nejsou blíž než ob dva', () => {
+  for (let seed = 1; seed <= 30; seed++) {
+    const rng = seeded(seed);
+    const keys = ['7x8', '8x7', '56:8', '56:7', '6x9', '9x6', '54:9', '54:6', '3x4', '4x3', '12:4', '12:3', '2x5', '5x2', '10:5', '10:2', '9x9', '81:9', '1x7', '7:1'];
+    const out = arrange(keys, rng);
+    assert.equal(out.length, keys.length);
+    for (let i = 1; i < out.length; i++) {
+      const fam = family(out[i]);
+      const near = out.slice(Math.max(0, i - 2), i);
+      assert.ok(!near.some((x) => fam.includes(x)), `seed ${seed}: ${out.join(' ')}`);
     }
   }
 });
