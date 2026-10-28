@@ -15,11 +15,12 @@ import {
   MAX_LVL,
   ZERO_PER_ROUND,
   DIV_UNLOCK,
-  NEW_DIV_PER_ROUND,
+  DIV_SHARE,
 } from '../js/learning.js';
 import { emptyFact } from '../js/storage.js';
 import { ALL_KEYS, MUL_KEYS, DIV_KEYS, mirror, isZero, isDiv, mulOf, family } from '../js/facts.js';
 import { NOW, MINUTE, HOUR, seeded, freshData } from './helpers.mjs';
+import { createRound, currentKey, isDone, isRetry, answerCurrent } from '../js/round.js';
 
 const mid = () => 0.5; // bez rozptylu: odstup přesně podle INTERVALS
 
@@ -193,7 +194,7 @@ test('co nejde, je v kole vždy, nové se pořád přidávají', () => {
   assert.equal(Object.values(plan.kinds).filter((k) => k === 'new').length, ROUND_LEN - weak.length);
 });
 
-test('hodně splatných: přednost mají ty nejslabší, ale 3 nové a 2 jisté zůstanou', () => {
+test('hodně splatných násobení: přednost mají ty nejslabší, ale 3 nové a 2 jisté zůstanou', () => {
   const d = freshData();
   const keys = NON_ZERO.slice(0, 60);
   keys.forEach((k, i) => {
@@ -203,7 +204,7 @@ test('hodně splatných: přednost mají ty nejslabší, ale 3 nové a 2 jisté 
   for (const k of [...NON_ZERO.slice(80), ...ZERO]) Object.assign(d.facts[k], { n: 5, ok: 5, lvl: 2, due: NOW + 48 * HOUR });
   // Nových zbývá jen pár: ať je jasné, že 3 nové se do kola vždy dostanou.
   for (const k of NON_ZERO.slice(80, 83)) Object.assign(d.facts[k], { n: 0, ok: 0, lvl: 0, due: 0 });
-  const plan = planRound(d.facts, NOW, seeded(3));
+  const plan = planRound(d.facts, NOW, seeded(3), { ops: 'mul' });
   checkPlan(plan);
   for (const k of keys.slice(0, 10)) assert.equal(plan.kinds[k], 'due');
   const count = (kind) => Object.values(plan.kinds).filter((k) => k === kind).length;
@@ -257,20 +258,58 @@ test('dělení: nové jen za násobením, které aspoň trochu jde', () => {
   assert.ok(seen > 0, '56 : 8 se má objevit');
 });
 
-test('dělení: nových v kole nanejvýš NEW_DIV_PER_ROUND, už hraná dělení podle potřeby', () => {
+const HALF = Math.round(ROUND_LEN * DIV_SHARE);
+
+test('nové dítě: 1. kolo jen násobení, od 2. kola zhruba polovina dělení', () => {
+  const d = freshData();
+  const rng = seeded(31);
+  let now = NOW;
+  const divCounts = [];
+  for (let r = 0; r < 3; r++) {
+    const plan = planRound(d.facts, now, rng);
+    checkPlan(plan);
+    divCounts.push(plan.keys.filter(isDiv).length);
+    const round = createRound(plan, now);
+    while (!isDone(round)) {
+      const k = currentKey(round);
+      recordAnswer(d.facts[k], { result: 'ok', ms: 2000, retry: isRetry(round, k) }, now, rng);
+      answerCurrent(round, { result: 'ok', ms: 2000 }, rng);
+      now += 5000;
+    }
+    now += 5 * MINUTE;
+  }
+  assert.deepEqual(divCounts, [0, HALF, HALF]);
+});
+
+test('dělení: polovina kola i při spoustě splatných násobení', () => {
   const d = freshData();
   knowsMultiplication(d);
+  MUL_KEYS.slice(0, 30).forEach((k) => Object.assign(d.facts[k], { lvl: 1, due: NOW - HOUR }));
   for (let seed = 1; seed <= 20; seed++) {
     const plan = planRound(d.facts, NOW, seeded(seed));
     checkPlan(plan);
-    const newDivs = plan.keys.filter((k) => isDiv(k) && d.facts[k].n === 0);
-    assert.ok(newDivs.length > 0 && newDivs.length <= NEW_DIV_PER_ROUND, String(newDivs.length));
+    assert.equal(plan.keys.filter(isDiv).length, HALF);
   }
+});
+
+test('dělení, která nejdou, jsou v kole přednostně', () => {
+  const d = freshData();
+  knowsMultiplication(d);
   const weakDiv = ['56:8', '56:7', '63:9', '42:6', '48:8', '54:9', '72:8', '81:9'];
   for (const k of weakDiv) Object.assign(d.facts[k], { n: 3, bad: 3, lvl: 0, due: NOW - HOUR, h: [-1, -1, -1] });
   const plan = planRound(d.facts, NOW, seeded(3));
   checkPlan(plan);
   for (const k of weakDiv) assert.equal(plan.kinds[k], 'due', k);
+  assert.equal(plan.keys.filter(isDiv).length, HALF);
+});
+
+test('málo dostupných dělení: kolo se doplní násobením', () => {
+  const d = freshData();
+  for (const k of ['7x8', '3x4']) Object.assign(d.facts[k], { n: 2, ok: 2, lvl: DIV_UNLOCK, due: NOW + HOUR });
+  const plan = planRound(d.facts, NOW, seeded(5));
+  checkPlan(plan);
+  // 56 : 8 stojí na 7 × 8 a 12 : 4 na 3 × 4. 56 : 7 a 12 : 3 čekají na 8 × 7 a 4 × 3.
+  assert.deepEqual(plan.keys.filter(isDiv).sort(), ['12:4', '56:8']);
 });
 
 test('procvičovat jen násobení nebo jen dělení', () => {

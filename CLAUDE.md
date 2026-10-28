@@ -44,10 +44,11 @@ Data jsou jen v localStorage zařízení, žádný server.
 - iPhone: dotykové plochy aspoň 48 px, `env(safe-area-inset-*)`, světlý i tmavý režim,
   input s písmem aspoň 16 px (jinak iOS zoomuje).
 - Status bar na iPhonu je `default` (sám se přizpůsobí světlému a tmavému režimu).
-- Konstanty učení (časy, intervaly, `ZERO_PER_ROUND`, `DIV_UNLOCK`, `NEW_DIV_PER_ROUND`)
+- Konstanty učení (časy, intervaly, `ZERO_PER_ROUND`, `DIV_UNLOCK`, `DIV_SHARE`)
   jsou jen v `js/learning.js`.
   Násobení nulou je jedno pravidlo: v kole nanejvýš `ZERO_PER_ROUND` příkladů s nulou.
   Dělení stojí na násobení: nové dělení až za násobením, které aspoň „učí se“.
+  Při procvičování obojího je zhruba `DIV_SHARE` (polovina) kola dělení, když už nějaké jde.
 - Dělí se jen čísly 1–10, dělení nulou appka nikdy nenabídne.
 - Čistá logika (`js/storage.js`, `js/facts.js`, `js/learning.js`, `js/distractors.js`,
   `js/round.js`, `js/progress.js`) nesahá na DOM a dostává `now` a `rng` parametrem.

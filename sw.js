@@ -2,7 +2,7 @@
 // PRAVIDLO: každá změna, která jde do vydání, zvýší CACHE_VERSION.
 // Každý nový soubor appky patří do ASSETS (hlídá to tests/sw.test.mjs).
 
-const CACHE_VERSION = 'v3';
+const CACHE_VERSION = 'v4';
 const CACHE_PREFIX = 'mala-nasobilka-';
 const CACHE = CACHE_PREFIX + CACHE_VERSION;
 

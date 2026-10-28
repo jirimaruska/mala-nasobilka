@@ -14,8 +14,9 @@ aplikace na iPhonu (přidaná na plochu) i offline.
   dělitel 1–10, nulou se nedělí). Celkem 231.
 - Každý příklad se sleduje zvlášť, i podle pořadí: 7 × 8 a 8 × 7 jsou dva různé příklady,
   stejně jako 56 : 8 a 56 : 7.
-- Násobení a dělení se v kole náhodně střídá. Nové dělení přijde, až když odpovídající
-  násobení aspoň trochu jde, a po chybě appka připomene: „Pomůže násobení: 7 × 8 = 56.“
+- Násobení a dělení se v kole náhodně střídá, dělení je zhruba polovina kola. Nové dělení
+  přijde, až když odpovídající násobení aspoň jednou vyšlo, takže v úplně prvním kole je jen
+  násobení. Po chybě appka připomene: „Pomůže násobení: 7 × 8 = 56.“
 - Co nejde, přichází častěji. Co jde rychle, vrací se s rostoucími odstupy
   (spaced repetition), aby se nezapomnělo.
 - Násobení nulou je jedno pravidlo, proto v kole nanejvýš 2 příklady s nulou.
