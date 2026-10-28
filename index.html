@@ -25,6 +25,7 @@
       <div class="home-top">
         <div class="logo" aria-hidden="true"><img src="icons/icon.svg" alt=""></div>
         <h1 id="home-hello">Malá násobilka</h1>
+        <p id="home-sub" class="home-sub">Násobení a dělení</p>
       </div>
 
       <form id="name-form" class="card stack" hidden>
@@ -36,9 +37,13 @@
 
       <div id="home-main" class="stack home-main" hidden>
         <div class="card stack">
-          <strong id="home-known" class="home-known">Umíš 0 ze 121 příkladů</strong>
-          <div class="meter meter-big meter-stack" aria-hidden="true">
-            <span id="home-meter-known" class="m-known"></span><span id="home-meter-learning" class="m-learning"></span>
+          <div id="home-row-mul" class="progress-row">
+            <div class="progress-head"><strong>Násobení</strong><span class="pr-count"></span></div>
+            <div class="meter meter-big meter-stack" aria-hidden="true"><span class="m-known"></span><span class="m-learning"></span></div>
+          </div>
+          <div id="home-row-div" class="progress-row">
+            <div class="progress-head"><strong>Dělení</strong><span class="pr-count"></span></div>
+            <div class="meter meter-big meter-stack" aria-hidden="true"><span class="m-known"></span><span class="m-learning"></span></div>
           </div>
           <span id="home-learning" class="muted"></span>
           <div class="chips">

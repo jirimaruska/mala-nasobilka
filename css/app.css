@@ -252,8 +252,31 @@ h3 {
   justify-content: center;
 }
 
-.home-known {
-  font-size: 22px;
+.home-sub {
+  margin: -6px 0 0;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.progress-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.progress-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  font-size: 20px;
+}
+
+.pr-count {
+  color: var(--muted);
+  font-weight: 700;
+  font-size: 17px;
+  font-variant-numeric: tabular-nums;
 }
 
 .big-label {
