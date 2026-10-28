@@ -1,8 +1,8 @@
 // Herní obrazovka: příklad, 4 bubliny, časování, pauza.
 
-import { parse, product, isZero } from '../facts.js';
+import { answer, isDiv, isZero, label, mulOf } from '../facts.js';
 import { BUBBLE_MS, planRound, recordAnswer, shuffle } from '../learning.js';
-import { makeOptions } from '../distractors.js';
+import { optionsFor } from '../distractors.js';
 import { createRound, currentKey, isDone, isRetry, answerCurrent } from '../round.js';
 import { logAnswer, logRound, roundReport } from '../progress.js';
 import { $, $$, el, reducedMotion } from './dom.js';
@@ -11,7 +11,18 @@ const COLORS = ['--b1', '--b2', '--b3', '--b4', '--b5', '--b6'];
 const PRAISE = ['Správně!', 'Super!', 'Výborně!', 'Paráda!', 'Bezva!'];
 const OK_PAUSE = 700; // po správné odpovědi hned dál
 const ZERO_PAUSE = 1600; // u nuly chvíli počkat, ať jde přečíst pravidlo
-const ZERO_RULE = 'Krát nula je vždycky nula.';
+
+// Pravidlo pro nulu: 7 × 0 a 0 × 7, nebo 0 : 7.
+function zeroRule(key) {
+  return isDiv(key) ? 'Nula děleno čímkoli je nula.' : 'Krát nula je vždycky nula.';
+}
+
+// Co ukázat po chybě. U dělení připomenout násobení, ze kterého vychází.
+function mistakeHint(key) {
+  if (isZero(key)) return zeroRule(key);
+  if (isDiv(key)) return 'Pomůže násobení: ' + label(mulOf(key)) + '\u00a0=\u00a0' + answer(mulOf(key)) + '.';
+  return 'Správně je ' + answer(key) + '.';
+}
 const SHOW_ANSWER = 3000; // jak dlouho ukázat správný výsledek po chybě
 const SKIP_AFTER = 700; // ťuknutím jde dál až po chvilce, aby se výsledek stihl přečíst
 const COUNT_STEP = 650;
@@ -103,7 +114,7 @@ export function createGame(app) {
   function start() {
     const data = app.store.data;
     const now = Date.now();
-    const plan = planRound(data.facts, now);
+    const plan = planRound(data.facts, now, Math.random, { ops: data.settings.ops });
     round = createRound(plan, now);
     before = {};
     for (const k of plan.keys) before[k] = JSON.parse(JSON.stringify(data.facts[k]));
@@ -152,10 +163,9 @@ export function createGame(app) {
     }
     resetBoard();
     const key = currentKey(round);
-    const { a, b } = parse(key);
-    options = makeOptions(a, b, app.store.data.facts[key]);
+    options = optionsFor(key, app.store.data.facts[key]);
     const colors = shuffle(COLORS.slice()).slice(0, 4);
-    qText.textContent = a + ' × ' + b;
+    qText.textContent = label(key);
     problem.classList.remove('blank');
     slots.forEach((slot, i) => {
       slot.style.setProperty('--c', 'var(' + colors[i] + ')');
@@ -182,7 +192,7 @@ export function createGame(app) {
   function onTap(i) {
     if (phase !== 'question') return;
     const ms = Math.round(elapsed());
-    const ok = options[i] === product(currentKey(round));
+    const ok = options[i] === answer(currentKey(round));
     resolve(ok ? 'ok' : 'bad', i, ms);
   }
 
@@ -190,7 +200,7 @@ export function createGame(app) {
     clearTimers();
     phase = 'feedback';
     const key = currentKey(round);
-    const correct = product(key);
+    const correct = answer(key);
     const correctIndex = options.indexOf(correct);
     const chosen = index === null ? null : options[index];
     const data = app.store.data;
@@ -212,7 +222,7 @@ export function createGame(app) {
       showPoints(index, entry.pts);
       slots.forEach((s, i) => i !== index && s.classList.add('fade'));
       if (isZero(key)) {
-        msg.textContent = 'Správně! ' + ZERO_RULE;
+        msg.textContent = 'Správně! ' + zeroRule(key);
       } else {
         msg.textContent = round.streak >= 3 ? 'Série ' + round.streak + '!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
       }
@@ -225,7 +235,7 @@ export function createGame(app) {
     if (index !== null) slots[index].classList.add('wrong');
     slots.forEach((s, i) => i !== index && i !== correctIndex && s.classList.add('fade'));
     revealBubble(correctIndex);
-    msg.textContent = (result === 'late' ? 'Čas vypršel. ' : 'Vedle. ') + (isZero(key) ? ZERO_RULE : 'Správně je ' + correct + '.');
+    msg.textContent = (result === 'late' ? 'Čas vypršel. ' : 'Vedle. ') + mistakeHint(key);
     hint.hidden = false;
     app.sound.wrong();
     skipFrom = performance.now() + SKIP_AFTER;

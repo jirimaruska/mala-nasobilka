@@ -1,7 +1,7 @@
 // Učení: sledování každého příkladu, spaced repetition a výběr příkladů do kola.
 // Všechny konstanty učení jsou tady.
 
-import { ALL_KEYS, mirror, isZero } from './facts.js';
+import { ALL_KEYS, MUL_KEYS, DIV_KEYS, OPS, family, isDiv, isZero, mulOf } from './facts.js';
 
 export const BUBBLE_MS = 7000; // jak dlouho bubliny vydrží
 export const FAST_MS = 3000; // do téhle doby je odpověď rychlá (příklad jde zpaměti)
@@ -20,9 +20,14 @@ export const MAX_LVL = INTERVALS.length - 1;
 const EMA = 0.3; // váha nové odpovědi v průměrném čase
 const SURE_SLOTS = 2; // pár jistých příkladů pro radost
 const MIN_NEW = 3; // pár nových příkladů v každém kole, dokud nějaké zbývají
+const MIN_NEW_DIV = 1; // v dělicí polovině kola jedno nové, ať nevytlačí dělení, která nejdou
 // Krát nula je jedno pravidlo, ne 21 věcí k zapamatování: v kole nanejvýš 2 příklady s nulou.
 // Opakování po chybě v kole se do limitu nepočítá.
 export const ZERO_PER_ROUND = 2;
+// Dělení přichází za násobením: nové 56 : 8 až když 7 × 8 aspoň „učí se“ (mastery 2).
+export const DIV_UNLOCK = 2;
+// Při procvičování obojího je zhruba polovina kola dělení (když už nějaké dělení jde).
+export const DIV_SHARE = 0.5;
 
 export const MASTERY_LABELS = ['Ještě nehráno', 'Zatím nejde', 'Učí se', 'Umí', 'Umí jistě'];
 
@@ -122,15 +127,15 @@ function interval(fact) {
   return Math.max(INTERVALS[fact.lvl] ?? 0, INTERVALS[1]);
 }
 
-// Seřadí příklady tak, aby stejný příklad ani jeho otočená verze (8 × 7 po 7 × 8)
-// nebyly těsně za sebou.
+// Seřadí příklady tak, aby stejný příklad ani nikdo z jeho rodiny (7 × 8, 8 × 7, 56 : 8,
+// 56 : 7) nebyli těsně za sebou. Jinak by šel výsledek opsat z předchozí otázky.
 export function arrange(keys, rng = Math.random) {
   const pool = shuffle(keys.slice(), rng);
   const out = [];
-  // Konflikt, když je stejný nebo otočený příklad do 2 pozic před nebo za místem vložení.
+  // Konflikt, když je příklad ze stejné rodiny do 2 pozic před nebo za místem vložení.
   const fitsAt = (k, pos) => {
-    const m = mirror(k);
-    return out.slice(Math.max(0, pos - 2), pos + 2).every((x) => x !== k && x !== m);
+    const fam = family(k);
+    return out.slice(Math.max(0, pos - 2), pos + 2).every((x) => !fam.includes(x));
   };
   while (pool.length) {
     const i = pool.findIndex((k) => fitsAt(k, out.length));
@@ -155,9 +160,19 @@ export function arrange(keys, rng = Math.random) {
 // Vybere příklady do kola.
 // Pořadí důležitosti: splatné (co nejde nejdřív), nové, pár jistých, nejbližší k termínu.
 // Příkladů s nulou je nanejvýš ZERO_PER_ROUND.
+// ops: 'both' (násobení i dělení), 'mul' (jen násobení), 'div' (jen dělení).
+// Při 'both' je zhruba DIV_SHARE kola dělení a zbytek násobení. Nové dělení je jen za
+// násobením, které už aspoň trochu jde; když takových dělení není dost, doplní se násobením.
+// Při 'div' se dělení neomezuje, rodič ho chce procvičovat.
 // Vrací { keys, kinds }, kinds[key] je 'due' | 'new' | 'sure' | 'soon'.
-export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
-  const entries = shuffle(ALL_KEYS.slice(), rng).map((k) => ({ k, f: facts[k] }));
+export function planRound(facts, now, rng = Math.random, { len = ROUND_LEN, ops = 'both' } = {}) {
+  const mode = OPS.includes(ops) ? ops : 'both';
+  const pool = mode === 'mul' ? MUL_KEYS : mode === 'div' ? DIV_KEYS : ALL_KEYS;
+  const both = mode === 'both';
+  const unlocked = (k) => !both || !isDiv(k) || mastery(facts[mulOf(k)]) >= DIV_UNLOCK;
+  const entries = shuffle(pool.slice(), rng)
+    .map((k) => ({ k, f: facts[k] }))
+    .filter((e) => e.f.n > 0 || unlocked(e.k));
   const due = entries
     .filter((e) => e.f.n > 0 && e.f.due <= now)
     .sort(
@@ -175,10 +190,13 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
 
   const picked = new Map();
   let zeros = 0;
-  const take = (list, kind, count) => {
+  const any = () => true;
+  const size = (only) => [...picked.keys()].filter(only).length;
+  // Přidá z list nanejvýš count příkladů, pro které platí only, dokud jich v kole není cap.
+  const take = (list, kind, count, only = any, cap = len) => {
     for (const e of list) {
-      if (count <= 0 || picked.size >= len) break;
-      if (picked.has(e.k)) continue;
+      if (count <= 0 || picked.size >= len || size(only) >= cap) break;
+      if (picked.has(e.k) || !only(e.k)) continue;
       if (isZero(e.k)) {
         if (zeros >= ZERO_PER_ROUND) continue;
         zeros += 1;
@@ -187,18 +205,37 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
       count -= 1;
     }
   };
+  // Doplní příklady, pro které platí only, až jich je v kole cap.
+  const fill = (only, cap, minNew = MIN_NEW) => {
+    const room = () => cap - size(only);
+    const mine = (list) => list.filter((e) => only(e.k));
+    const freshMine = mine(fresh);
+    const sureCount = Math.min(SURE_SLOTS, mine(sure).length);
+    const newCount = Math.min(minNew, freshMine.filter((e) => !isZero(e.k)).length);
+    take(due, 'due', room() - sureCount - newCount, only, cap);
+    // Nové násobení má přednost, dělení na něm stojí. Zbytek nových se míchá.
+    take(freshMine.filter((e) => !isDiv(e.k)), 'new', newCount, only, cap);
+    take(freshMine, 'new', room() - sureCount, only, cap);
+    take(sure, 'sure', sureCount, only, cap);
+    take(soon, 'soon', room(), only, cap);
+    // Dorovnat, kdyby rezervovaná místa nešla zaplnit (např. jisté příklady jsou samé nuly).
+    take(due, 'due', room(), only, cap);
+    take(fresh, 'new', room(), only, cap);
+  };
+
   // Nuly napřed: nejslabší splatná a k ní jedna nová, ať se postupně objeví všechny.
-  take(due.filter((e) => isZero(e.k)), 'due', 1);
-  take(fresh.filter((e) => isZero(e.k)), 'new', 1);
-  const sureCount = Math.min(SURE_SLOTS, sure.length);
-  const newCount = Math.min(MIN_NEW, fresh.filter((e) => !isZero(e.k)).length);
-  take(due, 'due', len - picked.size - sureCount - newCount);
-  take(fresh, 'new', len - picked.size - sureCount);
-  take(sure, 'sure', sureCount);
-  take(soon, 'soon', len - picked.size);
-  // Dorovnat, kdyby rezervovaná místa nešla zaplnit (např. jisté příklady jsou samé nuly).
-  take(due, 'due', len - picked.size);
-  take(fresh, 'new', len - picked.size);
+  // Když nová nula není, dostane místo další nula, která nejde.
+  const zero = (e) => isZero(e.k);
+  take(due.filter(zero), 'due', 1);
+  take(fresh.filter(zero), 'new', 1);
+  take(due.filter(zero), 'due', ZERO_PER_ROUND);
+  if (both) {
+    const available = entries.filter((e) => isDiv(e.k)).length;
+    fill(isDiv, Math.min(Math.round(len * DIV_SHARE), available), MIN_NEW_DIV);
+    fill((k) => !isDiv(k), len - size(isDiv));
+  }
+  // Zbytek kola (a pojistka, kdyby některá část nešla zaplnit).
+  fill(any, len);
 
   return { keys: arrange([...picked.keys()], rng), kinds: Object.fromEntries(picked) };
 }

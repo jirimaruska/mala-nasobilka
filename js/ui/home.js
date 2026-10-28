@@ -1,9 +1,11 @@
 // Úvodní obrazovka: jméno, pokrok, tlačítko Hrát.
 
-import { ALL_KEYS } from '../facts.js';
+import { MUL_KEYS, DIV_KEYS } from '../facts.js';
 import { mastery } from '../learning.js';
 import { dayStreak } from '../progress.js';
 import { $, plural } from './dom.js';
+
+const SUBTITLES = { both: 'Násobení a dělení', mul: 'Násobení', div: 'Dělení' };
 
 export function createHome(app) {
   const form = $('#name-form');
@@ -55,15 +57,25 @@ export function createHome(app) {
     form.hidden = hasName;
     main.hidden = !hasName;
     $('#home-hello').textContent = hasName ? 'Ahoj, ' + data.name + '!' : 'Malá násobilka';
+    const ops = data.settings.ops;
+    $('#home-sub').textContent = SUBTITLES[ops] ?? SUBTITLES.both;
     if (!hasName) return;
 
-    const levels = ALL_KEYS.map((k) => mastery(data.facts[k]));
-    const known = levels.filter((m) => m >= 3).length;
-    const learning = levels.filter((m) => m === 1 || m === 2).length;
-    const total = ALL_KEYS.length;
-    $('#home-known').textContent = 'Umíš ' + known + ' ze ' + total + ' příkladů';
-    $('#home-meter-known').style.width = (known / total) * 100 + '%';
-    $('#home-meter-learning').style.width = (learning / total) * 100 + '%';
+    // Pokrok zvlášť pro násobení a dělení, podle toho, co se procvičuje.
+    let learning = 0;
+    const row = (el, keys, shown) => {
+      el.hidden = !shown;
+      if (!shown) return;
+      const levels = keys.map((k) => mastery(data.facts[k]));
+      const known = levels.filter((m) => m >= 3).length;
+      const learn = levels.filter((m) => m === 1 || m === 2).length;
+      learning += learn;
+      $('.pr-count', el).textContent = 'umíš ' + known + ' ze ' + keys.length;
+      $('.m-known', el).style.width = (known / keys.length) * 100 + '%';
+      $('.m-learning', el).style.width = (learn / keys.length) * 100 + '%';
+    };
+    row($('#home-row-mul'), MUL_KEYS, ops !== 'div');
+    row($('#home-row-div'), DIV_KEYS, ops !== 'mul');
     $('#home-learning').textContent = learning ? 'Na cestě: ' + learning + ' ' + plural(learning, 'příklad', 'příklady', 'příkladů') : '';
 
     const best = $('#home-best');

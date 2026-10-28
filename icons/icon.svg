@@ -11,16 +11,21 @@
     </radialGradient>
   </defs>
   <rect width="512" height="512" fill="url(#bg)"/>
-  <circle cx="140" cy="160" r="40" fill="#22c55e"/>
-  <circle cx="140" cy="160" r="40" fill="url(#shine)"/>
-  <circle cx="370" cy="150" r="32" fill="#f59e0b"/>
-  <circle cx="370" cy="150" r="32" fill="url(#shine)"/>
-  <circle cx="372" cy="372" r="36" fill="#0ea5e9"/>
-  <circle cx="372" cy="372" r="36" fill="url(#shine)"/>
-  <circle cx="240" cy="280" r="115" fill="#ec4899"/>
-  <circle cx="240" cy="280" r="115" fill="url(#shine)"/>
-  <g transform="translate(240 280) rotate(45)" fill="#fff">
-    <rect x="-17" y="-66" width="34" height="132" rx="17"/>
-    <rect x="-66" y="-17" width="132" height="34" rx="17"/>
+  <!-- malé bubliny pro radost -->
+  <circle cx="132" cy="142" r="30" fill="#22c55e"/>
+  <circle cx="132" cy="142" r="30" fill="url(#shine)"/>
+  <circle cx="380" cy="368" r="26" fill="#f59e0b"/>
+  <circle cx="380" cy="368" r="26" fill="url(#shine)"/>
+  <!-- násobení -->
+  <circle cx="205" cy="300" r="100" fill="#ec4899"/>
+  <circle cx="205" cy="300" r="100" fill="url(#shine)"/>
+  <g transform="translate(205 300) rotate(45)" fill="#fff">
+    <rect x="-15" y="-58" width="30" height="116" rx="15"/>
+    <rect x="-58" y="-15" width="116" height="30" rx="15"/>
   </g>
+  <!-- dělení (dvojtečka, jak ve škole) -->
+  <circle cx="352" cy="176" r="74" fill="#0ea5e9"/>
+  <circle cx="352" cy="176" r="74" fill="url(#shine)"/>
+  <circle cx="352" cy="150" r="14" fill="#fff"/>
+  <circle cx="352" cy="202" r="14" fill="#fff"/>
 </svg>

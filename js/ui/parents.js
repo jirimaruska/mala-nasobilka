@@ -1,12 +1,28 @@
-// Pro rodiče: pojistka, tabulka 10 × 10, nejtěžší příklady, statistiky a nastavení.
+// Pro rodiče: pojistka, tabulka 0–10 pro násobení i dělení, nejtěžší příklady, statistiky
+// a nastavení.
 
-import { MIN, MAX, ALL_KEYS, key, label, product, mirror } from '../facts.js';
+import { MIN, MAX, key, divKey, label, answer, mirror, mulOf, family, isDiv } from '../facts.js';
 import { FAST_MS, SLOW_MS, MASTERY_LABELS, mastery, recentAccuracy } from '../learning.js';
 import { parentStats, dayKey } from '../progress.js';
 import { createEmpty, exportJson, importJson, DATA_VER } from '../storage.js';
 import { $, $$, el, plural, seconds, percent } from './dom.js';
 
 const DAY_NAMES = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
+
+// Tabulka pro násobení a pro dělení. Dělení je na stejném místě jako násobení, ze kterého
+// vychází, takže jde přepínat a porovnávat.
+const OPS_VIEW = {
+  mul: {
+    corner: '×',
+    note: 'Řádek je první číslo, sloupec druhé. 7\u00a0×\u00a08 a 8\u00a0×\u00a07 jsou dva různé příklady, každý má svoji buňku. Řádek a sloupec 0 je násobení nulou.',
+    dot: 'jde jen jedním směrem',
+  },
+  div: {
+    corner: ':',
+    note: 'Dělení je na stejném místě jako násobení, ze kterého vychází: v řádku 7 a sloupci 8 je 56\u00a0:\u00a08\u00a0=\u00a07. Řádek je výsledek, sloupec dělitel. Sloupec 0 je přeškrtnutý, nulou se nedělí.',
+    dot: 'dělení zaostává za násobením',
+  },
+};
 
 // Barvy buněk: r2 a r1 potřebují trénink, b1 a b2 jdou. Prázdná buňka = nehráno.
 const MODES = {
@@ -118,7 +134,8 @@ export function createParents(app) {
   const detail = $('#p-detail');
   let gateAnswer = 0;
   let mode = 'mastery';
-  let selected = null;
+  let op = 'mul';
+  let selected = null; // vybrané místo v tabulce jako násobení, např. "7x8"
   let selectedDay = null;
 
   function newGate() {
@@ -151,17 +168,30 @@ export function createParents(app) {
     });
   }
 
-  // Tabulka: řádek = první činitel, sloupec = druhý.
+  for (const btn of $$('#p-ops button')) {
+    btn.addEventListener('click', () => {
+      op = btn.dataset.op;
+      renderGrid();
+    });
+  }
+
+  // Tabulka: řádek = první činitel (u dělení výsledek), sloupec = druhý (u dělení dělitel).
   const grid = $('#p-grid');
   grid.style.setProperty('--cols', String(MAX - MIN + 2));
-  grid.append(el('span', { class: 'gh corner', text: '×' }));
+  const corner = el('span', { class: 'gh corner', text: '×' });
+  grid.append(corner);
   for (let b = MIN; b <= MAX; b++) grid.append(el('span', { class: 'gh', text: b }));
   for (let a = MIN; a <= MAX; a++) {
     grid.append(el('span', { class: 'gh', text: a }));
     for (let b = MIN; b <= MAX; b++) {
-      const k = key(a, b);
-      grid.append(el('button', { class: 'cell', type: 'button', 'data-key': k, onclick: () => select(k) }));
+      grid.append(el('button', { class: 'cell', type: 'button', 'data-a': a, 'data-b': b, onclick: () => select(key(a, b)) }));
     }
+  }
+
+  // Příklad v buňce podle zobrazené operace. U dělení nulou žádný není.
+  function cellKey(a, b) {
+    if (op === 'mul') return key(a, b);
+    return b === 0 ? null : divKey(a * b, b);
   }
 
   function select(k) {
@@ -172,23 +202,37 @@ export function createParents(app) {
   function renderGrid() {
     const facts = app.store.data.facts;
     const m = MODES[mode];
+    const view = OPS_VIEW[op];
+    for (const btn of $$('#p-ops button')) btn.setAttribute('aria-pressed', String(btn.dataset.op === op));
     for (const btn of $$('#p-modes button')) btn.setAttribute('aria-pressed', String(btn.dataset.mode === mode));
+    $('#p-grid-note').textContent = view.note;
     $('#p-mode-note').textContent = m.note;
+    corner.textContent = view.corner;
     for (const cell of $$('.cell', grid)) {
-      const k = cell.dataset.key;
+      const pos = key(Number(cell.dataset.a), Number(cell.dataset.b));
+      const k = cellKey(Number(cell.dataset.a), Number(cell.dataset.b));
+      cell.disabled = !k;
+      if (!k) {
+        cell.className = 'cell na';
+        cell.textContent = '';
+        cell.setAttribute('aria-label', 'Nulou se nedělí');
+        continue;
+      }
       const f = facts[k];
       const c = m.cell(f);
-      cell.className = 'cell' + (c ? ' ' + c.bin : ' empty') + (k === selected ? ' selected' : '');
+      cell.className = 'cell' + (c ? ' ' + c.bin : ' empty') + (pos === selected ? ' selected' : '');
       cell.textContent = c?.text ?? '';
-      const other = facts[mirror(k)];
-      const lopsided = f.n > 0 && other.n > 0 && Math.abs(mastery(f) - mastery(other)) >= 2;
-      cell.classList.toggle('lopsided', lopsided);
+      // Tečka: u násobení jde jen jeden směr, u dělení zaostává za svým násobením.
+      const other = facts[op === 'mul' ? mirror(k) : mulOf(k)];
+      const gap = mastery(other) - mastery(f);
+      const dot = f.n > 0 && other.n > 0 && (op === 'mul' ? Math.abs(gap) >= 2 : gap >= 2);
+      cell.classList.toggle('lopsided', dot);
       cell.setAttribute('aria-label', label(k) + ': ' + MASTERY_LABELS[mastery(f)]);
     }
     $('#p-legend').replaceChildren(
       ...m.legend.map(([bin, text]) => el('span', { class: 'lg' }, [el('i', { class: 'sw ' + bin }), text])),
       el('span', { class: 'lg' }, [el('i', { class: 'sw empty' }), 'nehráno']),
-      el('span', { class: 'lg' }, [el('i', { class: 'sw dot' }), 'jde jen jedním směrem'])
+      el('span', { class: 'lg' }, [el('i', { class: 'sw dot' }), view.dot])
     );
     renderDetail();
   }
@@ -209,7 +253,7 @@ export function createParents(app) {
     }
     rows.push(['Další opakování', nextReview(f, now)]);
     return el('div', { class: 'dcard' }, [
-      el('strong', { class: 'deq', text: label(k) + ' = ' + product(k) }),
+      el('strong', { class: 'deq', text: label(k) + ' = ' + answer(k) }),
       el(
         'dl',
         {},
@@ -218,12 +262,11 @@ export function createParents(app) {
     ]);
   }
 
+  // Celá rodina: 7 × 8, 8 × 7, 56 : 8, 56 : 7.
   function renderDetail() {
     detail.hidden = !selected;
     if (!selected) return;
-    const cards = [factCard(selected)];
-    if (mirror(selected) !== selected) cards.push(factCard(mirror(selected)));
-    detail.replaceChildren(...cards);
+    detail.replaceChildren(...family(selected).map(factCard));
   }
 
   function tile(value, caption, sub) {
@@ -236,26 +279,27 @@ export function createParents(app) {
 
   function renderStats(s, now) {
     $('#p-tiles').replaceChildren(
-      tile(s.known + ' / ' + ALL_KEYS.length, 'umí', s.sure ? s.sure + ' jistě' : null),
+      tile(s.mul.known + ' / ' + s.mul.total, 'násobení umí', s.mul.sure ? s.mul.sure + ' jistě' : null),
+      tile(s.div.known + ' / ' + s.div.total, 'dělení umí', s.div.sure ? s.div.sure + ' jistě' : null),
       tile(percent(s.accuracy), 'správně', s.weekAccuracy !== null ? '7 dní: ' + percent(s.weekAccuracy) : null),
       tile(seconds(s.avgMs), 'průměrný čas'),
-      tile(String(s.rounds), plural(s.rounds, 'kolo', 'kola', 'kol')),
+      tile(String(s.rounds), plural(s.rounds, 'kolo', 'kola', 'kol'), s.best ? 'rekord ' + s.best : null),
       tile(String(s.daysPlayed), plural(s.daysPlayed, 'den hraní', 'dny hraní', 'dní hraní'), s.streak > 1 ? 'v řadě ' + s.streak : null),
       tile(duration(s.time), 'čas hraní'),
-      tile(String(s.best), 'rekord'),
       tile(dateLabel(s.lastPlayed, now), 'naposledy')
     );
   }
 
   function factRow(k, extra) {
     return el('li', {}, [
-      el('button', { type: 'button', class: 'linkish', text: label(k) + ' = ' + product(k), onclick: () => showInGrid(k) }),
+      el('button', { type: 'button', class: 'linkish', text: label(k) + ' = ' + answer(k), onclick: () => showInGrid(k) }),
       el('span', { class: 'muted', text: extra }),
     ]);
   }
 
   function showInGrid(k) {
-    selected = k;
+    op = isDiv(k) ? 'div' : 'mul';
+    selected = mulOf(k);
     renderGrid();
     $('#p-grid-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
@@ -284,6 +328,19 @@ export function createParents(app) {
       )
     );
     $('#p-oneway-empty').hidden = s.oneWay.length > 0;
+
+    $('#p-divlag').replaceChildren(
+      ...s.divLag.slice(0, 8).map(({ div, mul }) =>
+        el('li', {}, [
+          el('button', { type: 'button', class: 'linkish', text: label(div), onclick: () => showInGrid(div) }),
+          el('span', {
+            class: 'muted',
+            text: MASTERY_LABELS[mastery(facts[div])].toLowerCase() + ', ale ' + label(mul) + ' ' + MASTERY_LABELS[mastery(facts[mul])].toLowerCase(),
+          }),
+        ])
+      )
+    );
+    $('#p-divlag-empty').hidden = s.divLag.length > 0;
   }
 
   function renderChart(s) {
@@ -358,6 +415,7 @@ export function createParents(app) {
     const on = app.sound.isEnabled();
     $('#p-sound').textContent = on ? 'Zvuk je zapnutý' : 'Zvuk je vypnutý';
     $('#p-sound').setAttribute('aria-pressed', String(on));
+    for (const btn of $$('#p-practice button')) btn.setAttribute('aria-pressed', String(btn.dataset.ops === data.settings.ops));
     $('#p-version').textContent = 'Formát dat: verze ' + data.ver + (data.ver > DATA_VER ? ' (novější než appka)' : '');
     const problem = app.store.problem;
     $('#p-problem').hidden = !problem;
@@ -399,6 +457,15 @@ export function createParents(app) {
     app.store.save();
     renderSettings();
   });
+
+  for (const btn of $$('#p-practice button')) {
+    btn.addEventListener('click', () => {
+      app.store.data.settings.ops = btn.dataset.ops;
+      app.store.save();
+      renderSettings();
+      status('Uloženo. Platí od dalšího kola.');
+    });
+  }
 
   $('#p-export').addEventListener('click', () => {
     shareOrDownload('mala-nasobilka-zaloha-' + dayKey(Date.now()) + '.json', exportJson(app.store.data));

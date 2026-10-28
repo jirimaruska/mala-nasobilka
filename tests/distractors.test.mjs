@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { makeOptions, candidates } from '../js/distractors.js';
+import { makeOptions, candidates, makeDivOptions, divCandidates } from '../js/distractors.js';
 import { seeded } from './helpers.mjs';
 
 test('pro 0–10 × 0–10: 4 různá celá čísla od 0, správné je mezi nimi', () => {
@@ -74,4 +74,45 @@ test('správná odpověď je na různých místech', () => {
   const positions = new Set();
   for (let i = 0; i < 50; i++) positions.add(makeOptions(6, 7, null, rng).indexOf(42));
   assert.equal(positions.size, 4);
+});
+
+test('dělení: pro všech 110 příkladů 4 různá celá čísla od 0, správné je mezi nimi', () => {
+  const rng = seeded(21);
+  for (let b = 1; b <= 10; b++) {
+    for (let a = 0; a <= 10; a++) {
+      const k = a * b + ' : ' + b;
+      for (let i = 0; i < 20; i++) {
+        const opts = makeDivOptions(a * b, b, null, rng);
+        assert.equal(opts.length, 4, k);
+        assert.equal(new Set(opts).size, 4, k);
+        assert.ok(opts.includes(a), k);
+        for (const v of opts) assert.ok(Number.isInteger(v) && v >= 0 && v <= 12, `${k}: ${v}`);
+      }
+    }
+  }
+});
+
+test('dělení: typické omyly', () => {
+  const c = divCandidates(56, 8);
+  for (const v of [6, 8, 5, 9]) assert.ok(c.has(v), `56 : 8: chybí ${v}`);
+  assert.ok(!c.has(7) && !c.has(0));
+  const zero = divCandidates(0, 5);
+  assert.ok(zero.has(5) && zero.has(1) && !zero.has(0));
+  const same = divCandidates(7, 7);
+  assert.ok(same.has(0) && same.has(7) && same.has(2));
+  assert.ok(divCandidates(7, 1).has(1));
+  const rng = seeded(22);
+  for (let i = 0; i < 100; i++) {
+    assert.ok(makeDivOptions(56, 8, null, rng).some((v) => v === 6 || v === 8), 'vždy aspoň jeden sousední výsledek');
+  }
+});
+
+test('dělení: nula jako špatná možnost jen u b : b nebo z dřívějšího omylu', () => {
+  const rng = seeded(23);
+  for (let b = 1; b <= 10; b++) {
+    for (let a = 2; a <= 10; a++) {
+      for (let i = 0; i < 10; i++) assert.ok(!makeDivOptions(a * b, b, null, rng).includes(0), a * b + ' : ' + b);
+    }
+  }
+  assert.ok(divCandidates(56, 8, { wrong: [0] }).has(0));
 });

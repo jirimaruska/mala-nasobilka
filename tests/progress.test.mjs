@@ -97,3 +97,20 @@ test('statistiky pro rodiče: nula ve dvojicích „jen jedním směrem“ a v p
   assert.equal(s.seen, 2);
   assert.equal(s.sure, 1);
 });
+
+test('statistiky pro rodiče: násobení a dělení zvlášť, dělení zaostává', async () => {
+  const { parentStats } = await import('../js/progress.js');
+  const { createEmpty } = await import('../js/storage.js');
+  const data = createEmpty(NOW);
+  Object.assign(data.facts['7x8'], { n: 6, ok: 6, lvl: 5, ms: 1500, h: [1500] });
+  Object.assign(data.facts['56:8'], { n: 4, ok: 1, bad: 3, lvl: 0, ms: 4800, h: [-1, -1, 4800, -1] });
+  Object.assign(data.facts['56:7'], { n: 2, ok: 2, lvl: 3, ms: 2100, h: [2100, 2000] });
+  Object.assign(data.facts['3x4'], { n: 3, ok: 3, lvl: 3, ms: 1800, h: [1800] });
+  Object.assign(data.facts['12:4'], { n: 2, ok: 2, lvl: 2, ms: 2500, h: [2500] });
+  const s = parentStats(data, NOW);
+  assert.deepEqual(s.mul, { total: 121, known: 2, sure: 1, seen: 2 });
+  assert.deepEqual(s.div, { total: 110, known: 1, sure: 0, seen: 3 });
+  assert.deepEqual(s.divLag.map((x) => [x.div, x.mul]), [['56:8', '7x8']]);
+  assert.deepEqual(s.oneWay, [], 'dělení do dvojic násobení nepatří');
+  assert.equal(s.hardest[0].key, '56:8');
+});
