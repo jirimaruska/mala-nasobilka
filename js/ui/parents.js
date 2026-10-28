@@ -1,6 +1,6 @@
 // Pro rodiče: pojistka, tabulka 10 × 10, nejtěžší příklady, statistiky a nastavení.
 
-import { MIN, MAX, key, label, product, mirror } from '../facts.js';
+import { MIN, MAX, ALL_KEYS, key, label, product, mirror } from '../facts.js';
 import { FAST_MS, SLOW_MS, MASTERY_LABELS, mastery, recentAccuracy } from '../learning.js';
 import { parentStats, dayKey } from '../progress.js';
 import { createEmpty, exportJson, importJson, DATA_VER } from '../storage.js';
@@ -153,6 +153,7 @@ export function createParents(app) {
 
   // Tabulka: řádek = první činitel, sloupec = druhý.
   const grid = $('#p-grid');
+  grid.style.setProperty('--cols', String(MAX - MIN + 2));
   grid.append(el('span', { class: 'gh corner', text: '×' }));
   for (let b = MIN; b <= MAX; b++) grid.append(el('span', { class: 'gh', text: b }));
   for (let a = MIN; a <= MAX; a++) {
@@ -235,7 +236,7 @@ export function createParents(app) {
 
   function renderStats(s, now) {
     $('#p-tiles').replaceChildren(
-      tile(s.known + ' / 100', 'umí', s.sure ? s.sure + ' jistě' : null),
+      tile(s.known + ' / ' + ALL_KEYS.length, 'umí', s.sure ? s.sure + ' jistě' : null),
       tile(percent(s.accuracy), 'správně', s.weekAccuracy !== null ? '7 dní: ' + percent(s.weekAccuracy) : null),
       tile(seconds(s.avgMs), 'průměrný čas'),
       tile(String(s.rounds), plural(s.rounds, 'kolo', 'kola', 'kol')),

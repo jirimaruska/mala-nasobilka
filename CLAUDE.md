@@ -1,6 +1,6 @@
 # Malá násobilka
 
-Statická PWA na procvičování malé násobilky (1–10 × 1–10) pro děti kolem 10 let.
+Statická PWA na procvičování malé násobilky (0–10 × 0–10, 121 příkladů) pro děti kolem 10 let.
 Běží na iPhonu přidaná na plochu, hostovaná na Vercelu bez build kroku.
 Data jsou jen v localStorage zařízení, žádný server.
 
@@ -43,7 +43,8 @@ Data jsou jen v localStorage zařízení, žádný server.
 - iPhone: dotykové plochy aspoň 48 px, `env(safe-area-inset-*)`, světlý i tmavý režim,
   input s písmem aspoň 16 px (jinak iOS zoomuje).
 - Status bar na iPhonu je `default` (sám se přizpůsobí světlému a tmavému režimu).
-- Konstanty učení (časy, intervaly) jsou jen v `js/learning.js`.
+- Konstanty učení (časy, intervaly, `ZERO_PER_ROUND`) jsou jen v `js/learning.js`.
+  Násobení nulou je jedno pravidlo: v kole nanejvýš `ZERO_PER_ROUND` příkladů s nulou.
 - Čistá logika (`js/storage.js`, `js/facts.js`, `js/learning.js`, `js/distractors.js`,
   `js/round.js`, `js/progress.js`) nesahá na DOM a dostává `now` a `rng` parametrem.
 
@@ -56,7 +57,7 @@ vercel.json             hlavičky pro Vercel
 css/app.css             vzhled, světlý a tmavý režim, bubliny
 js/main.js              start, service worker, přepínání obrazovek
 js/storage.js           načtení, uložení, migrate(), export a import
-js/facts.js             100 příkladů jako klíče "7x8" (7 × 8 a 8 × 7 jsou různé)
+js/facts.js             121 příkladů jako klíče "7x8" (7 × 8 a 8 × 7 jsou různé)
 js/learning.js          spaced repetition, výběr příkladů do kola
 js/distractors.js       špatné možnosti podle typických omylů
 js/round.js             stav jednoho kola (20 příkladů)

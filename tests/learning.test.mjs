@@ -13,9 +13,10 @@ import {
   FAST_MS,
   SLOW_MS,
   MAX_LVL,
+  ZERO_PER_ROUND,
 } from '../js/learning.js';
 import { emptyFact } from '../js/storage.js';
-import { ALL_KEYS, mirror } from '../js/facts.js';
+import { ALL_KEYS, mirror, isZero } from '../js/facts.js';
 import { NOW, MINUTE, HOUR, seeded, freshData } from './helpers.mjs';
 
 const mid = () => 0.5; // bez rozptylu: odstup přesně podle INTERVALS
@@ -130,17 +131,54 @@ test('difficulty: chyby a pomalost zvyšují obtížnost', () => {
   assert.equal(recentAccuracy(wrong), 0.25);
 });
 
+const NON_ZERO = ALL_KEYS.filter((k) => !isZero(k));
+const ZERO = ALL_KEYS.filter(isZero);
+
 function checkPlan(plan) {
   assert.equal(plan.keys.length, ROUND_LEN);
   assert.equal(new Set(plan.keys).size, ROUND_LEN);
   for (const k of plan.keys) assert.ok(ALL_KEYS.includes(k));
   assert.deepEqual(Object.keys(plan.kinds).sort(), plan.keys.slice().sort());
+  assert.ok(plan.keys.filter(isZero).length <= ZERO_PER_ROUND, 'moc příkladů s nulou: ' + plan.keys.join(' '));
 }
 
-test('první kolo: 20 různých nových příkladů', () => {
-  const plan = planRound(freshData().facts, NOW, seeded(1));
+test('první kolo: 20 různých nových příkladů, nanejvýš 2 s nulou', () => {
+  for (let seed = 1; seed <= 20; seed++) {
+    const plan = planRound(freshData().facts, NOW, seeded(seed));
+    checkPlan(plan);
+    assert.ok(Object.values(plan.kinds).every((k) => k === 'new'));
+  }
+});
+
+test('nula u dítěte, které už hrálo: přijdou právě 2 nové s nulou, ne celé kolo', () => {
+  const d = freshData();
+  NON_ZERO.forEach((k, i) => Object.assign(d.facts[k], { n: 4, ok: 4, lvl: 4, due: NOW + (i + 1) * HOUR }));
+  const plan = planRound(d.facts, NOW, seeded(6));
   checkPlan(plan);
-  assert.ok(Object.values(plan.kinds).every((k) => k === 'new'));
+  assert.equal(plan.keys.filter(isZero).length, ZERO_PER_ROUND);
+});
+
+test('nula, která nejde, přijde, a k ní jedna nová nula, ať se objeví všechny', () => {
+  const d = freshData();
+  const weakZero = ['7x0', '0x7', '0x0'];
+  for (const k of weakZero) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
+  for (let seed = 1; seed <= 10; seed++) {
+    const plan = planRound(d.facts, NOW, seeded(seed));
+    checkPlan(plan);
+    const zeros = plan.keys.filter(isZero);
+    assert.equal(zeros.length, ZERO_PER_ROUND);
+    assert.equal(zeros.filter((k) => weakZero.includes(k)).length, 1, zeros.join(' '));
+    assert.equal(zeros.filter((k) => d.facts[k].n === 0).length, 1, zeros.join(' '));
+  }
+});
+
+test('když nové nuly došly, obě místa dostanou nuly, které nejdou', () => {
+  const d = freshData();
+  for (const k of ZERO) Object.assign(d.facts[k], { n: 3, ok: 3, lvl: 4, due: NOW + 48 * HOUR });
+  for (const k of ['7x0', '0x7']) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
+  const plan = planRound(d.facts, NOW, seeded(8));
+  checkPlan(plan);
+  assert.deepEqual(plan.keys.filter(isZero).sort(), ['0x7', '7x0']);
 });
 
 test('co nejde, je v kole vždy, nové se pořád přidávají', () => {
@@ -155,11 +193,14 @@ test('co nejde, je v kole vždy, nové se pořád přidávají', () => {
 
 test('hodně splatných: přednost mají ty nejslabší, ale 3 nové a 2 jisté zůstanou', () => {
   const d = freshData();
-  const keys = ALL_KEYS.slice(0, 60);
+  const keys = NON_ZERO.slice(0, 60);
   keys.forEach((k, i) => {
     Object.assign(d.facts[k], { n: 2, ok: 1, lvl: i < 10 ? 0 : 2, due: NOW - HOUR });
   });
-  for (const k of ALL_KEYS.slice(60, 80)) Object.assign(d.facts[k], { n: 5, ok: 5, lvl: 4, due: NOW + 48 * HOUR });
+  for (const k of NON_ZERO.slice(60, 80)) Object.assign(d.facts[k], { n: 5, ok: 5, lvl: 4, due: NOW + 48 * HOUR });
+  for (const k of [...NON_ZERO.slice(80), ...ZERO]) Object.assign(d.facts[k], { n: 5, ok: 5, lvl: 2, due: NOW + 48 * HOUR });
+  // Nových zbývá jen pár: ať je jasné, že 3 nové se do kola vždy dostanou.
+  for (const k of NON_ZERO.slice(80, 83)) Object.assign(d.facts[k], { n: 0, ok: 0, lvl: 0, due: 0 });
   const plan = planRound(d.facts, NOW, seeded(3));
   checkPlan(plan);
   for (const k of keys.slice(0, 10)) assert.equal(plan.kinds[k], 'due');

@@ -1,6 +1,6 @@
 // Herní obrazovka: příklad, 4 bubliny, časování, pauza.
 
-import { parse, product } from '../facts.js';
+import { parse, product, isZero } from '../facts.js';
 import { BUBBLE_MS, planRound, recordAnswer, shuffle } from '../learning.js';
 import { makeOptions } from '../distractors.js';
 import { createRound, currentKey, isDone, isRetry, answerCurrent } from '../round.js';
@@ -10,6 +10,8 @@ import { $, $$, el, reducedMotion } from './dom.js';
 const COLORS = ['--b1', '--b2', '--b3', '--b4', '--b5', '--b6'];
 const PRAISE = ['Správně!', 'Super!', 'Výborně!', 'Paráda!', 'Bezva!'];
 const OK_PAUSE = 700; // po správné odpovědi hned dál
+const ZERO_PAUSE = 1600; // u nuly chvíli počkat, ať jde přečíst pravidlo
+const ZERO_RULE = 'Krát nula je vždycky nula.';
 const SHOW_ANSWER = 3000; // jak dlouho ukázat správný výsledek po chybě
 const SKIP_AFTER = 700; // ťuknutím jde dál až po chvilce, aby se výsledek stihl přečíst
 const COUNT_STEP = 650;
@@ -209,9 +211,13 @@ export function createGame(app) {
       popBubble(index);
       showPoints(index, entry.pts);
       slots.forEach((s, i) => i !== index && s.classList.add('fade'));
-      msg.textContent = round.streak >= 3 ? 'Série ' + round.streak + '!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
+      if (isZero(key)) {
+        msg.textContent = 'Správně! ' + ZERO_RULE;
+      } else {
+        msg.textContent = round.streak >= 3 ? 'Série ' + round.streak + '!' : PRAISE[Math.floor(Math.random() * PRAISE.length)];
+      }
       app.sound.pop();
-      timer = setTimeout(showQuestion, OK_PAUSE);
+      timer = setTimeout(showQuestion, isZero(key) ? ZERO_PAUSE : OK_PAUSE);
       return;
     }
 
@@ -219,7 +225,7 @@ export function createGame(app) {
     if (index !== null) slots[index].classList.add('wrong');
     slots.forEach((s, i) => i !== index && i !== correctIndex && s.classList.add('fade'));
     revealBubble(correctIndex);
-    msg.textContent = (result === 'late' ? 'Čas vypršel. ' : 'Vedle. ') + 'Správně je ' + correct + '.';
+    msg.textContent = (result === 'late' ? 'Čas vypršel. ' : 'Vedle. ') + (isZero(key) ? ZERO_RULE : 'Správně je ' + correct + '.');
     hint.hidden = false;
     app.sound.wrong();
     skipFrom = performance.now() + SKIP_AFTER;

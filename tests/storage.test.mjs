@@ -10,7 +10,7 @@ import {
   exportJson,
   importJson,
 } from '../js/storage.js';
-import { ALL_KEYS, key, mirror, label, parse, product } from '../js/facts.js';
+import { ALL_KEYS, key, mirror, label, parse, product, isZero } from '../js/facts.js';
 
 const NOW = Date.UTC(2026, 9, 20, 16, 0);
 
@@ -24,10 +24,14 @@ function memoryStorage(initial = {}) {
   };
 }
 
-test('facts: 100 příkladů, pořadí činitelů se rozlišuje', () => {
-  assert.equal(ALL_KEYS.length, 100);
-  assert.equal(new Set(ALL_KEYS).size, 100);
+test('facts: 121 příkladů 0–10 × 0–10, pořadí činitelů se rozlišuje', () => {
+  assert.equal(ALL_KEYS.length, 121);
+  assert.equal(new Set(ALL_KEYS).size, 121);
   assert.ok(ALL_KEYS.includes('7x8') && ALL_KEYS.includes('8x7'));
+  assert.ok(ALL_KEYS.includes('7x0') && ALL_KEYS.includes('0x7') && ALL_KEYS.includes('0x0'));
+  assert.equal(ALL_KEYS.filter(isZero).length, 21);
+  assert.equal(isZero('7x8'), false);
+  assert.equal(product('0x7'), 0);
   assert.equal(mirror('7x8'), '8x7');
   assert.equal(label('7x8'), '7\u00a0×\u00a08');
   assert.equal(product('7x8'), 56);
@@ -38,10 +42,10 @@ test('klíč localStorage je mala-nasobilka', () => {
   assert.equal(STORAGE_KEY, 'mala-nasobilka');
 });
 
-test('createEmpty má verzi a všech 100 příkladů', () => {
+test('createEmpty má verzi a všech 121 příkladů', () => {
   const d = createEmpty(NOW);
   assert.equal(d.ver, DATA_VER);
-  assert.equal(Object.keys(d.facts).length, 100);
+  assert.equal(Object.keys(d.facts).length, 121);
   assert.equal(d.facts['7x8'].n, 0);
 });
 
@@ -51,17 +55,74 @@ test('migrate: nesmysl vrátí prázdná data', () => {
   }
 });
 
-test('migrate: data bez ver jsou verze 1 a nic se neztratí', () => {
+test('migrate: data bez ver jsou verze 1, převedou se a nic se neztratí', () => {
   const raw = { name: 'Dítě', facts: { '7x8': { n: 5, ok: 3, lvl: 2 } }, best: 120 };
   const d = migrate(raw, NOW);
-  assert.equal(d.ver, 1);
+  assert.equal(d.ver, DATA_VER);
   assert.equal(d.name, 'Dítě');
   assert.equal(d.best, 120);
   assert.equal(d.facts['7x8'].n, 5);
   assert.equal(d.facts['7x8'].ok, 3);
   assert.equal(d.facts['7x8'].lvl, 2);
   assert.deepEqual(d.facts['7x8'].h, []);
-  assert.equal(Object.keys(d.facts).length, 100);
+  assert.equal(Object.keys(d.facts).length, 121);
+});
+
+// Vzorek dat, jak je ukládala verze 1 appky (jen 1–10 × 1–10).
+function sampleV1() {
+  const facts = {};
+  for (let a = 1; a <= 10; a++) {
+    for (let b = 1; b <= 10; b++) {
+      facts[a + 'x' + b] = { n: 0, ok: 0, bad: 0, late: 0, ms: null, best: null, lvl: 0, due: 0, last: 0, h: [], wrong: [] };
+    }
+  }
+  facts['7x8'] = { n: 6, ok: 4, bad: 1, late: 1, ms: 3100, best: 2200, lvl: 2, due: NOW + 1000, last: NOW - 1000, h: [3000, -1, 2500, -2, 3200, 2200], wrong: [63] };
+  return {
+    ver: 1,
+    createdAt: NOW - 86400000,
+    name: 'Dítě',
+    settings: { sound: false },
+    facts,
+    rounds: [{ t: NOW - 5000, score: 321, ok: 17, n: 20, ms: 2400, streak: 9, time: 70000 }],
+    days: { '2026-10-20': { n: 20, ok: 17, ms: 40800, rounds: 1, time: 70000 } },
+    best: 321,
+    extra: 'zachovat',
+  };
+}
+
+test('migrate: verze 1 → 2 doplní příklady s nulou a nic jiného nezmění', () => {
+  const v1 = sampleV1();
+  const d = migrate(v1, NOW);
+  assert.equal(d.ver, 2);
+  assert.equal(Object.keys(d.facts).length, 121);
+  assert.deepEqual(d.facts['7x8'], v1.facts['7x8']);
+  for (const k of Object.keys(v1.facts)) assert.deepEqual(d.facts[k], v1.facts[k], k);
+  for (const k of ALL_KEYS.filter(isZero)) assert.equal(d.facts[k].n, 0, k);
+  assert.equal(d.name, 'Dítě');
+  assert.equal(d.settings.sound, false);
+  assert.deepEqual(d.rounds, v1.rounds);
+  assert.deepEqual(d.days, v1.days);
+  assert.equal(d.best, 321);
+  assert.equal(d.createdAt, v1.createdAt);
+  assert.equal(d.extra, 'zachovat');
+});
+
+test('migrate: verze 1 uložená v telefonu se po načtení převede a uloží jako verze 2', () => {
+  const storage = memoryStorage({ [STORAGE_KEY]: JSON.stringify(sampleV1()) });
+  const store = openStore(storage, NOW);
+  assert.equal(store.problem, null);
+  assert.equal(store.data.ver, 2);
+  assert.equal(store.save(), true);
+  const saved = JSON.parse(storage.map.get(STORAGE_KEY));
+  assert.equal(saved.ver, 2);
+  assert.equal(saved.facts['7x8'].n, 6);
+  assert.equal(saved.facts['0x7'].n, 0);
+});
+
+test('migrate: data verze 2 zůstanou verze 2', () => {
+  const d = migrate(migrate(sampleV1(), NOW), NOW);
+  assert.equal(d.ver, 2);
+  assert.equal(d.facts['7x8'].n, 6);
 });
 
 test('migrate: doplní chybějící příklady a pole, zachová neznámá pole', () => {

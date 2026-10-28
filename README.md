@@ -10,10 +10,13 @@ Hra na procvičování malé násobilky pro děti kolem 10 let. Funguje jako apl
 - Na konci kola appka ukáže, co se zlepšilo a co ještě procvičit.
 
 ## Jak se učí
+- Příklady 0–10 × 0–10, celkem 121.
 - Každý příklad se sleduje zvlášť, i podle pořadí: 7 × 8 a 8 × 7 jsou dva různé příklady.
 - Co nejde, přichází častěji. Co jde rychle, vrací se s rostoucími odstupy
   (spaced repetition), aby se nezapomnělo.
-- Rodiče vidí v sekci Pro rodiče tabulku 10 × 10, nejtěžší příklady a statistiky.
+- Násobení nulou je jedno pravidlo, proto v kole nanejvýš 2 příklady s nulou.
+  Po odpovědi appka připomene: „Krát nula je vždycky nula.“
+- Rodiče vidí v sekci Pro rodiče tabulku 0–10 (11 × 11), nejtěžší příklady a statistiky.
 
 ## Instalace na iPhone
 1. Otevřít adresu appky v Safari.
