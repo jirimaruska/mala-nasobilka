@@ -5,6 +5,7 @@ import { MIN, MAX, key, divKey, label, answer, mirror, mulOf, family, isDiv } fr
 import { FAST_MS, SLOW_MS, MASTERY_LABELS, mastery, recentAccuracy } from '../learning.js';
 import { parentStats, dayKey } from '../progress.js';
 import { createEmpty, exportJson, importJson, DATA_VER } from '../storage.js';
+import { APP_VERSION } from '../version.js';
 import { $, $$, el, plural, seconds, percent } from './dom.js';
 
 const DAY_NAMES = ['Ne', 'Po', 'Út', 'St', 'Čt', 'Pá', 'So'];
@@ -416,7 +417,9 @@ export function createParents(app) {
     $('#p-sound').textContent = on ? 'Zvuk je zapnutý' : 'Zvuk je vypnutý';
     $('#p-sound').setAttribute('aria-pressed', String(on));
     for (const btn of $$('#p-practice button')) btn.setAttribute('aria-pressed', String(btn.dataset.ops === data.settings.ops));
-    $('#p-version').textContent = 'Formát dat: verze ' + data.ver + (data.ver > DATA_VER ? ' (novější než appka)' : '');
+    // Verze appky se mění s každým vydáním, formát dat jen když se mění uložená data.
+    $('#p-version').textContent =
+      'Verze appky: ' + APP_VERSION.replace(/^v/, '') + ' · Formát dat: ' + data.ver + (data.ver > DATA_VER ? ' (novější než appka)' : '');
     const problem = app.store.problem;
     $('#p-problem').hidden = !problem;
     $('#p-problem-text').textContent =

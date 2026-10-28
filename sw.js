@@ -1,8 +1,8 @@
 // Service worker: appka funguje offline.
-// PRAVIDLO: každá změna, která jde do vydání, zvýší CACHE_VERSION.
+// PRAVIDLO: každá změna, která jde do vydání, zvýší CACHE_VERSION (a stejně APP_VERSION v js/version.js).
 // Každý nový soubor appky patří do ASSETS (hlídá to tests/sw.test.mjs).
 
-const CACHE_VERSION = 'v4';
+const CACHE_VERSION = 'v5';
 const CACHE_PREFIX = 'mala-nasobilka-';
 const CACHE = CACHE_PREFIX + CACHE_VERSION;
 
@@ -11,6 +11,7 @@ const ASSETS = [
   'manifest.webmanifest',
   'css/app.css',
   'js/main.js',
+  'js/version.js',
   'js/facts.js',
   'js/storage.js',
   'js/learning.js',
