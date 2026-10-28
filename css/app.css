@@ -544,9 +544,10 @@ h3 {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.12);
 }
 
-.grid10 {
+.grid-table {
+  /* --cols nastaví js/ui/parents.js podle počtu čísel (0–10) + záhlaví. */
   display: grid;
-  grid-template-columns: repeat(11, 1fr);
+  grid-template-columns: repeat(var(--cols, 12), minmax(0, 1fr));
   gap: 2px;
 }
 
@@ -569,8 +570,8 @@ h3 {
   min-width: 0;
   padding: 0;
   border: 0;
-  border-radius: 6px;
-  font-size: clamp(10px, 3vw, 14px);
+  border-radius: 5px;
+  font-size: clamp(9px, 2.8vw, 14px);
   font-weight: 700;
   font-variant-numeric: tabular-nums;
 }

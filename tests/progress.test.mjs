@@ -84,3 +84,16 @@ test('statistiky pro rodiče', async () => {
   assert.equal(s.last14.at(-1).key, dayKey(NOW));
   assert.equal(s.last14.at(-1).n, 10);
 });
+
+test('statistiky pro rodiče: nula ve dvojicích „jen jedním směrem“ a v počtech', async () => {
+  const { parentStats } = await import('../js/progress.js');
+  const { createEmpty } = await import('../js/storage.js');
+  const data = createEmpty(NOW);
+  Object.assign(data.facts['0x7'], { n: 5, ok: 5, lvl: 5, ms: 1200, h: [1200] });
+  Object.assign(data.facts['7x0'], { n: 3, ok: 0, bad: 3, lvl: 0, h: [-1, -1, -1], wrong: [7] });
+  const s = parentStats(data, NOW);
+  assert.deepEqual(s.oneWay.map((x) => [x.good, x.weak]), [['0x7', '7x0']]);
+  assert.equal(s.hardest[0].key, '7x0');
+  assert.equal(s.seen, 2);
+  assert.equal(s.sure, 1);
+});
