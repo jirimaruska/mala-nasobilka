@@ -22,6 +22,9 @@ Data jsou jen v localStorage zařízení, žádný server.
 ### 2. Verze cache v `sw.js`
 - Každá změna, která má jít do vydání, **zvýší `CACHE_VERSION` v `sw.js`**.
   Jinak iPhone dál ukazuje starou verzi z cache.
+- Stejnou hodnotu dostane `APP_VERSION` v `js/version.js` (rodiče ji vidí v Nastavení jako
+  „Verze appky“, test hlídá shodu). „Formát dat“ vedle ní je `DATA_VER` a mění se jen se
+  změnou uložených dat.
 - Každý nový soubor appky přidat do seznamu `ASSETS` v `sw.js`
   (hlídá to `tests/sw.test.mjs`).
 
@@ -61,6 +64,7 @@ sw.js                   service worker: CACHE_VERSION, ASSETS, cache-first
 vercel.json             hlavičky pro Vercel
 css/app.css             vzhled, světlý a tmavý režim, bubliny
 js/main.js              start, service worker, přepínání obrazovek
+js/version.js           verze appky (stejná jako CACHE_VERSION)
 js/storage.js           načtení, uložení, migrate(), export a import
 js/facts.js             příklady: násobení "7x8", dělení "56:8" (každý směr zvlášť)
 js/learning.js          spaced repetition, výběr příkladů do kola
