@@ -65,10 +65,9 @@ function pickWeighted(weights, rng) {
   return [...weights.keys()].at(-1);
 }
 
-// 4 různé možnosti v náhodném pořadí, jedna je správná. Všechny jsou celá čísla od 0.
-export function makeOptions(a, b, fact = null, rng = Math.random) {
-  const c = a * b;
-  const weights = candidates(a, b, fact);
+// Vybere 3 špatné možnosti a zamíchá je se správnou.
+// neighbors: nejtypičtější omyly, aspoň jeden z nich se ukáže vždy.
+function choose(correct, weights, neighbors, fact, rng, min) {
   const chosen = [];
   const take = (v) => {
     chosen.push(v);
@@ -78,16 +77,61 @@ export function makeOptions(a, b, fact = null, rng = Math.random) {
   // Poslední vlastní omyl většinou ukázat znovu.
   const lastWrong = fact?.wrong?.[0];
   if (weights.has(lastWrong) && rng() < 0.75) take(lastWrong);
-  // Aspoň jeden sousední násobek, ten je nejtypičtější.
-  const neighbors = new Map([...weights].filter(([v]) => [c + a, c - a, c + b, c - b].includes(v)));
-  if (neighbors.size) take(pickWeighted(neighbors, rng));
+  const near = new Map([...weights].filter(([v]) => neighbors.includes(v)));
+  if (near.size) take(pickWeighted(near, rng));
   while (chosen.length < 3 && weights.size) take(pickWeighted(weights, rng));
 
   // Záloha pro jistotu (nemělo by být potřeba).
   for (let d = 1; chosen.length < 3; d++) {
-    for (const v of [c + d, c - d]) {
-      if (chosen.length < 3 && v > 0 && v !== c && !chosen.includes(v)) chosen.push(v);
+    for (const v of [correct + d, correct - d]) {
+      if (chosen.length < 3 && v >= min && v !== correct && !chosen.includes(v)) chosen.push(v);
     }
   }
-  return shuffle([c, ...chosen], rng);
+  return shuffle([correct, ...chosen], rng);
+}
+
+// 4 různé možnosti v náhodném pořadí, jedna je správná. Všechny jsou celá čísla od 0.
+export function makeOptions(a, b, fact = null, rng = Math.random) {
+  const c = a * b;
+  return choose(c, candidates(a, b, fact), [c + a, c - a, c + b, c - b], fact, rng, 1);
+}
+
+const DIV_LIMIT = 12; // výsledek dělení je 0 až 10, vyšší možnosti by byly hned poznat
+
+// Omyly u dělení c : b = a (dělitel b je 1 až 10).
+export function divCandidates(c, b, fact = null) {
+  const a = c / b;
+  const weights = new Map();
+  const add = (v, w, allowZero = false) => {
+    if (!Number.isInteger(v) || v < 0 || (v === 0 && !allowZero) || v === a || v > DIV_LIMIT) return;
+    weights.set(v, Math.max(weights.get(v) ?? 0, w));
+  };
+
+  if (c === 0) {
+    // 0 : 5: záměna s dělitelem (5) nebo s 5 : 5 (1).
+    add(b, 8);
+    add(1, 5);
+    add(b + 1, 2);
+    add(2, 1);
+    add(10, 1);
+  } else {
+    // Sousední výsledek: 56 : 8 = 6 nebo 8. U 7 : 7 = 1 je sousedem i 0.
+    add(a - 1, 6, true);
+    add(a + 1, 6);
+    // Dělitel místo výsledku: 56 : 8 = 8. U 7 : 1 = 7 záměna s 1.
+    add(b, 5);
+    // Ob jeden vedle.
+    add(a - 2, 2);
+    add(a + 2, 2);
+  }
+  // Co dítě u tohoto příkladu už jednou spletlo.
+  if (fact && Array.isArray(fact.wrong)) fact.wrong.forEach((v, i) => add(v, 9 - i, true));
+
+  return weights;
+}
+
+// 4 různé možnosti pro dělení c : b, jedna je správná.
+export function makeDivOptions(c, b, fact = null, rng = Math.random) {
+  const a = c / b;
+  return choose(a, divCandidates(c, b, fact), [a - 1, a + 1], fact, rng, 0);
 }
