@@ -187,13 +187,18 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
       count -= 1;
     }
   };
+  // Nuly napřed: nejslabší splatná a k ní jedna nová, ať se postupně objeví všechny.
+  take(due.filter((e) => isZero(e.k)), 'due', 1);
+  take(fresh.filter((e) => isZero(e.k)), 'new', 1);
   const sureCount = Math.min(SURE_SLOTS, sure.length);
-  const newCount = Math.min(MIN_NEW, fresh.length);
-  take(due, 'due', len - sureCount - newCount);
+  const newCount = Math.min(MIN_NEW, fresh.filter((e) => !isZero(e.k)).length);
+  take(due, 'due', len - picked.size - sureCount - newCount);
   take(fresh, 'new', len - picked.size - sureCount);
   take(sure, 'sure', sureCount);
   take(soon, 'soon', len - picked.size);
+  // Dorovnat, kdyby rezervovaná místa nešla zaplnit (např. jisté příklady jsou samé nuly).
   take(due, 'due', len - picked.size);
+  take(fresh, 'new', len - picked.size);
 
   return { keys: arrange([...picked.keys()], rng), kinds: Object.fromEntries(picked) };
 }

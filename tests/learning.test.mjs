@@ -158,15 +158,27 @@ test('nula u dítěte, které už hrálo: přijdou právě 2 nové s nulou, ne c
   assert.equal(plan.keys.filter(isZero).length, ZERO_PER_ROUND);
 });
 
-test('nula, která nejde, má přednost před novou nulou, ale limit platí', () => {
+test('nula, která nejde, přijde, a k ní jedna nová nula, ať se objeví všechny', () => {
   const d = freshData();
   const weakZero = ['7x0', '0x7', '0x0'];
   for (const k of weakZero) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
-  const plan = planRound(d.facts, NOW, seeded(7));
+  for (let seed = 1; seed <= 10; seed++) {
+    const plan = planRound(d.facts, NOW, seeded(seed));
+    checkPlan(plan);
+    const zeros = plan.keys.filter(isZero);
+    assert.equal(zeros.length, ZERO_PER_ROUND);
+    assert.equal(zeros.filter((k) => weakZero.includes(k)).length, 1, zeros.join(' '));
+    assert.equal(zeros.filter((k) => d.facts[k].n === 0).length, 1, zeros.join(' '));
+  }
+});
+
+test('když nové nuly došly, obě místa dostanou nuly, které nejdou', () => {
+  const d = freshData();
+  for (const k of ZERO) Object.assign(d.facts[k], { n: 3, ok: 3, lvl: 4, due: NOW + 48 * HOUR });
+  for (const k of ['7x0', '0x7']) Object.assign(d.facts[k], { n: 2, bad: 2, lvl: 0, due: NOW - HOUR, h: [-1, -1] });
+  const plan = planRound(d.facts, NOW, seeded(8));
   checkPlan(plan);
-  const zeros = plan.keys.filter(isZero);
-  assert.equal(zeros.length, ZERO_PER_ROUND);
-  for (const k of zeros) assert.ok(weakZero.includes(k), k);
+  assert.deepEqual(plan.keys.filter(isZero).sort(), ['0x7', '7x0']);
 });
 
 test('co nejde, je v kole vždy, nové se pořád přidávají', () => {
