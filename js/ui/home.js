@@ -60,9 +60,10 @@ export function createHome(app) {
     const levels = ALL_KEYS.map((k) => mastery(data.facts[k]));
     const known = levels.filter((m) => m >= 3).length;
     const learning = levels.filter((m) => m === 1 || m === 2).length;
-    $('#home-known').textContent = 'Umíš ' + known + ' ze 100 příkladů';
-    $('#home-meter-known').style.width = known + '%';
-    $('#home-meter-learning').style.width = learning + '%';
+    const total = ALL_KEYS.length;
+    $('#home-known').textContent = 'Umíš ' + known + ' ze ' + total + ' příkladů';
+    $('#home-meter-known').style.width = (known / total) * 100 + '%';
+    $('#home-meter-learning').style.width = (learning / total) * 100 + '%';
     $('#home-learning').textContent = learning ? 'Na cestě: ' + learning + ' ' + plural(learning, 'příklad', 'příklady', 'příkladů') : '';
 
     const best = $('#home-best');
