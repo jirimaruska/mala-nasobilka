@@ -845,11 +845,13 @@ ol.rank li::before {
 }
 
 .game-msg {
-  min-height: 30px;
+  /* Místo na dva řádky („Správně! Krát nula je vždycky nula.“), ať bubliny neposkakují. */
+  min-height: 2.6em;
   margin: 0;
   text-align: center;
-  font-size: 22px;
+  font-size: 21px;
   font-weight: 800;
+  line-height: 1.25;
 }
 
 .game-hint {
