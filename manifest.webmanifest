@@ -2,7 +2,7 @@
   "id": "./",
   "name": "Malá násobilka",
   "short_name": "Násobilka",
-  "description": "Hra na procvičování malé násobilky.",
+  "description": "Hra na procvičování malé násobilky: násobení a dělení.",
   "lang": "cs",
   "dir": "ltr",
   "start_url": "./",
