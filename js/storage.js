@@ -1,14 +1,21 @@
 // Ukládání do localStorage. Klíč se NIKDY nemění.
 // Změna formátu dat: zvýšit DATA_VER a přidat krok do MIGRATIONS (viz CLAUDE.md).
 
-import { ALL_KEYS } from './facts.js';
+import { ALL_KEYS, isZero } from './facts.js';
 
 export const STORAGE_KEY = 'mala-nasobilka';
-export const DATA_VER = 1;
+export const DATA_VER = 2;
 
 // Kroky migrace: MIGRATIONS[n] převede data verze n na verzi n + 1.
 // Krok jen přidává a převádí, nic nemaže.
-const MIGRATIONS = {};
+const MIGRATIONS = {
+  // 1 → 2: přibylo násobení nulou (0–10 × 0–10). Doplní prázdné příklady s nulou.
+  1(d) {
+    const facts = isObject(d.facts) ? { ...d.facts } : {};
+    for (const k of ALL_KEYS) if (isZero(k) && !isObject(facts[k])) facts[k] = emptyFact();
+    return { ...d, facts, ver: 2 };
+  },
+};
 
 export function emptyFact() {
   return {

@@ -1,7 +1,7 @@
 // Učení: sledování každého příkladu, spaced repetition a výběr příkladů do kola.
 // Všechny konstanty učení jsou tady.
 
-import { ALL_KEYS, mirror } from './facts.js';
+import { ALL_KEYS, mirror, isZero } from './facts.js';
 
 export const BUBBLE_MS = 7000; // jak dlouho bubliny vydrží
 export const FAST_MS = 3000; // do téhle doby je odpověď rychlá (příklad jde zpaměti)
@@ -20,6 +20,9 @@ export const MAX_LVL = INTERVALS.length - 1;
 const EMA = 0.3; // váha nové odpovědi v průměrném čase
 const SURE_SLOTS = 2; // pár jistých příkladů pro radost
 const MIN_NEW = 3; // pár nových příkladů v každém kole, dokud nějaké zbývají
+// Krát nula je jedno pravidlo, ne 21 věcí k zapamatování: v kole nanejvýš 2 příklady s nulou.
+// Opakování po chybě v kole se do limitu nepočítá.
+export const ZERO_PER_ROUND = 2;
 
 export const MASTERY_LABELS = ['Ještě nehráno', 'Zatím nejde', 'Učí se', 'Umí', 'Umí jistě'];
 
@@ -151,6 +154,7 @@ export function arrange(keys, rng = Math.random) {
 
 // Vybere příklady do kola.
 // Pořadí důležitosti: splatné (co nejde nejdřív), nové, pár jistých, nejbližší k termínu.
+// Příkladů s nulou je nanejvýš ZERO_PER_ROUND.
 // Vrací { keys, kinds }, kinds[key] je 'due' | 'new' | 'sure' | 'soon'.
 export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
   const entries = shuffle(ALL_KEYS.slice(), rng).map((k) => ({ k, f: facts[k] }));
@@ -170,10 +174,15 @@ export function planRound(facts, now, rng = Math.random, len = ROUND_LEN) {
     .sort((x, y) => (x.f.due - now) / interval(x.f) - (y.f.due - now) / interval(y.f));
 
   const picked = new Map();
+  let zeros = 0;
   const take = (list, kind, count) => {
     for (const e of list) {
       if (count <= 0 || picked.size >= len) break;
       if (picked.has(e.k)) continue;
+      if (isZero(e.k)) {
+        if (zeros >= ZERO_PER_ROUND) continue;
+        zeros += 1;
+      }
       picked.set(e.k, kind);
       count -= 1;
     }

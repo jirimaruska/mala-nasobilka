@@ -1,6 +1,7 @@
-// 100 příkladů malé násobilky. Pořadí činitelů se rozlišuje: 7 × 8 a 8 × 7 jsou dva příklady.
+// 121 příkladů malé násobilky 0–10 × 0–10. Pořadí činitelů se rozlišuje:
+// 7 × 8 a 8 × 7 jsou dva příklady, stejně jako 7 × 0 a 0 × 7.
 
-export const MIN = 1;
+export const MIN = 0;
 export const MAX = 10;
 
 export function key(a, b) {
