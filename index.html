@@ -149,7 +149,11 @@
 
         <div id="p-grid-card" class="card stack">
           <h2>Tabulka příkladů</h2>
-          <p class="note">Řádek je první číslo, sloupec druhé. 7&nbsp;×&nbsp;8 a 8&nbsp;×&nbsp;7 jsou dva různé příklady, každý má svoji buňku. Řádek a sloupec 0 je násobení nulou.</p>
+          <div id="p-ops" class="seg">
+            <button type="button" data-op="mul" aria-pressed="true">Násobení</button>
+            <button type="button" data-op="div" aria-pressed="false">Dělení</button>
+          </div>
+          <p id="p-grid-note" class="note"></p>
           <div id="p-modes" class="seg">
             <button type="button" data-mode="mastery" aria-pressed="true">Jistota</button>
             <button type="button" data-mode="accuracy" aria-pressed="false">Úspěšnost</button>
@@ -159,7 +163,7 @@
           <div id="p-grid" class="grid-table"></div>
           <div id="p-legend" class="legend"></div>
           <div id="p-detail" class="detail" hidden></div>
-          <p class="note">Ťukněte na buňku: ukáže se příklad i jeho otočená verze.</p>
+          <p class="note">Ťukněte na buňku: ukáže se celá rodina příkladů, třeba 7&nbsp;×&nbsp;8, 8&nbsp;×&nbsp;7, 56&nbsp;:&nbsp;8 a 56&nbsp;:&nbsp;7.</p>
         </div>
 
         <div class="card stack">
@@ -176,6 +180,13 @@
         </div>
 
         <div class="card stack">
+          <h2>Dělení zaostává za násobením</h2>
+          <p class="note">Násobení jde, dělení, které z něj vychází, zatím ne. Pomáhá připomenout: 56&nbsp;:&nbsp;8 je 7, protože 7&nbsp;×&nbsp;8 je 56.</p>
+          <ul id="p-divlag" class="rank"></ul>
+          <p id="p-divlag-empty" class="note">Žádné takové příklady.</p>
+        </div>
+
+        <div class="card stack">
           <h2>Odpovědi za posledních 14 dní</h2>
           <div id="p-chart" class="chart"></div>
           <p id="p-chart-note" class="note"></p>
@@ -187,6 +198,14 @@
             <input id="p-name" class="input input-sm grow" type="text" maxlength="20" autocomplete="off" aria-label="Jméno dítěte" placeholder="Jméno dítěte">
             <button class="btn" type="submit">Uložit</button>
           </form>
+          <div class="stack setting">
+            <span class="setting-label">Procvičovat</span>
+            <div id="p-practice" class="seg">
+              <button type="button" data-ops="both" aria-pressed="true">Obojí</button>
+              <button type="button" data-ops="mul" aria-pressed="false">Násobení</button>
+              <button type="button" data-ops="div" aria-pressed="false">Dělení</button>
+            </div>
+          </div>
           <button id="p-sound" class="btn" type="button" aria-pressed="true">Zvuk je zapnutý</button>
           <button id="p-export" class="btn" type="button">Stáhnout zálohu</button>
           <button id="p-import" class="btn" type="button">Nahrát zálohu</button>

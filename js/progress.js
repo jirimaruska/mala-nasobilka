@@ -1,6 +1,6 @@
 // Záznam odehraných kol a dní. Shrnutí kola a statistiky pro rodiče.
 
-import { ALL_KEYS, MUL_KEYS, parse, key } from './facts.js';
+import { ALL_KEYS, MUL_KEYS, DIV_KEYS, parse, key, mulOf } from './facts.js';
 import { SLOW_MS, mastery, difficulty } from './learning.js';
 
 export const MAX_ROUNDS = 200;
@@ -160,7 +160,25 @@ export function parentStats(data, now) {
   }
   oneWay.sort((x, y) => y.diff - x.diff);
 
+  // Dělení zaostává za násobením, ze kterého vychází (7 × 8 umí, 56 : 8 ne).
+  const divLag = DIV_KEYS.filter((k) => data.facts[k].n > 0 && data.facts[mulOf(k)].n > 0)
+    .map((k) => ({ div: k, mul: mulOf(k), diff: mastery(data.facts[mulOf(k)]) - mastery(data.facts[k]) }))
+    .filter((x) => x.diff >= 2)
+    .sort((x, y) => y.diff - x.diff);
+
+  const count = (keys) => {
+    const lv = keys.map((k) => mastery(data.facts[k]));
+    return {
+      total: keys.length,
+      known: lv.filter((m) => m >= 3).length,
+      sure: lv.filter((m) => m === 4).length,
+      seen: lv.filter((m) => m > 0).length,
+    };
+  };
+
   return {
+    mul: count(MUL_KEYS),
+    div: count(DIV_KEYS),
     known: levels.filter((m) => m >= 3).length,
     sure: levels.filter((m) => m === 4).length,
     seen: levels.filter((m) => m > 0).length,
@@ -176,6 +194,7 @@ export function parentStats(data, now) {
     lastPlayed: Math.max(0, ...ALL_KEYS.map((k) => data.facts[k].last)),
     hardest,
     oneWay,
+    divLag,
     last14,
   };
 }
