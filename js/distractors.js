@@ -12,30 +12,44 @@ const PRODUCTS = [...new Set(Array.from({ length: MAX * MAX }, (_, i) => (Math.f
 export function candidates(a, b, fact = null) {
   const c = a * b;
   const weights = new Map();
-  const add = (v, w) => {
-    if (!Number.isInteger(v) || v <= 0 || v === c || v > LIMIT) return;
+  // Nula jako špatná možnost jen tam, kde dává smysl (allowZero).
+  const add = (v, w, allowZero = false) => {
+    if (!Number.isInteger(v) || v < 0 || (v === 0 && !allowZero) || v === c || v > LIMIT) return;
     weights.set(v, Math.max(weights.get(v) ?? 0, w));
   };
 
-  // Sousední násobky: (a ± 1) × b a a × (b ± 1).
-  for (const v of [c + a, c - a, c + b, c - b]) add(v, 6);
-  // Spletení o deset.
-  add(c + 10, 4);
-  add(c - 10, 4);
-  // Prohozené číslice: 56 a 65. Ne když je výsledek moc daleko (81 a 18).
-  if (c >= 10) {
-    const swapped = Number(String(c).split('').reverse().join(''));
-    if (swapped >= 10 && Math.abs(swapped - c) <= 30) add(swapped, 3);
+  if (c === 0) {
+    // Násobení nulou: záměna s × 1 (7 × 0 = 7) a připsaná nula (7 × 0 = 70).
+    const x = a || b;
+    add(x, 8);
+    add(10 * x, 5);
+    add(x + 1, 3);
+    add(1, 3);
+    add(10, 2);
+    add(2, 1);
+  } else {
+    // Sousední násobky: (a ± 1) × b a a × (b ± 1).
+    for (const v of [c + a, c - a, c + b, c - b]) add(v, 6);
+    // Spletení o deset.
+    add(c + 10, 4);
+    add(c - 10, 4);
+    // Prohozené číslice: 56 a 65. Ne když je výsledek moc daleko (81 a 18).
+    if (c >= 10) {
+      const swapped = Number(String(c).split('').reverse().join(''));
+      if (swapped >= 10 && Math.abs(swapped - c) <= 30) add(swapped, 3);
+    }
+    // Sečtení místo vynásobení: 3 × 4 = 7. U velkých výsledků by to bylo moc snadné.
+    if (c <= 30) add(a + b, 2);
+    // Blízké součiny z tabulky: 7 × 8 → 54. U malých výsledků jen ty nejbližší.
+    const near = Math.min(8, Math.max(2, Math.round(c * 0.15)));
+    for (const p of PRODUCTS) if (Math.abs(p - c) <= near) add(p, 2);
+    // Ob jeden násobek vedle.
+    for (const v of [c + 2 * a, c - 2 * a, c + 2 * b, c - 2 * b]) add(v, 1);
+    // Záměna × 1 s × 0: 7 × 1 = 0.
+    if (a === 1 || b === 1) add(0, 3, true);
   }
-  // Sečtení místo vynásobení: 3 × 4 = 7. U velkých výsledků by to bylo moc snadné.
-  if (c <= 30) add(a + b, 2);
-  // Blízké součiny z tabulky: 7 × 8 → 54. U malých výsledků jen ty nejbližší.
-  const near = Math.min(8, Math.max(2, Math.round(c * 0.15)));
-  for (const p of PRODUCTS) if (Math.abs(p - c) <= near) add(p, 2);
-  // Ob jeden násobek vedle.
-  for (const v of [c + 2 * a, c - 2 * a, c + 2 * b, c - 2 * b]) add(v, 1);
   // Co dítě u tohoto příkladu už jednou spletlo. Rozlišit správné od vlastního omylu pomáhá.
-  if (fact && Array.isArray(fact.wrong)) fact.wrong.forEach((v, i) => add(v, 9 - i));
+  if (fact && Array.isArray(fact.wrong)) fact.wrong.forEach((v, i) => add(v, 9 - i, true));
 
   return weights;
 }
@@ -51,7 +65,7 @@ function pickWeighted(weights, rng) {
   return [...weights.keys()].at(-1);
 }
 
-// 4 různé možnosti v náhodném pořadí, jedna je správná.
+// 4 různé možnosti v náhodném pořadí, jedna je správná. Všechny jsou celá čísla od 0.
 export function makeOptions(a, b, fact = null, rng = Math.random) {
   const c = a * b;
   const weights = candidates(a, b, fact);

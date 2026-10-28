@@ -22,6 +22,12 @@ export function product(k) {
   return a * b;
 }
 
+// Příklad s nulou (7 × 0, 0 × 7, 0 × 0).
+export function isZero(k) {
+  const { a, b } = parse(k);
+  return a === 0 || b === 0;
+}
+
 // Nezlomitelné mezery, aby se „7 × 8“ nerozdělilo na dva řádky.
 export function label(k) {
   const { a, b } = parse(k);
